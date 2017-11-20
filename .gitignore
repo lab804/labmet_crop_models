@@ -233,3 +233,4 @@ $RECYCLE.BIN/
 *.lnk
 
 .idea
+.~lock*
