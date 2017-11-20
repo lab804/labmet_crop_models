@@ -1,9 +1,11 @@
 from crop_models.xlsxreader.xlsxreader import ExcelDataReader
 from crop_models.dataset_preparer.data_preparer import GenerateTrainSets
 data = ExcelDataReader("dados_usm_estruturados.xlsx", l1=1,
-                       usecols=(0, 1, 2,3,4,5,6,7,8, 9))
+                       usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
 
-data = GenerateTrainSets(data.data(), 9)
+# data = "dasdas"
+
+data = GenerateTrainSets(data.data())
 
 
 def get_first_none(matrix):
@@ -27,4 +29,6 @@ def gen_train_set(matrix, amounth_before):
        print(i)
 
 
-data.train_data(3)
+print([i for i in data.train_data(3)])
+print(data.get_first_not_none(9))
+
