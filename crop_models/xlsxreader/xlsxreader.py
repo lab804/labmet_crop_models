@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from itertools import islice
