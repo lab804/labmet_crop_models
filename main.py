@@ -29,6 +29,5 @@ def gen_train_set(matrix, amounth_before):
        print(i)
 
 
-print([i for i in data.train_data(3)])
-print(data.get_first_not_none(9))
-
+for i in data.data_set_separator(3, 9):
+    print(i)

@@ -29,6 +29,8 @@ class GenerateTrainSets(object):
         else:
             raise TypeError("The matrix must be an iterable"
                             "object but not a string")
+        self.__max = []
+        self.__min = []
 
     @property
     def data_set(self):
@@ -38,23 +40,8 @@ class GenerateTrainSets(object):
     def data_set(self, matrix):
         if isinstance(matrix, tuple):
             matrix = [list(i) for i in matrix]
-        self.__matrix = [[float(j) if isinstance(j, int) else j for j in i]for i in matrix]
-
-    def get_first_not_none(self, goal_row):
-        """Index of first not None
-
-        Returns the index of the first not None
-        value of the goal row.
-
-        :return: index of
-        """
-        goal = None
-        index = 0
-        while goal is None:
-            goal = self.data_set[index][goal_row]
-            index += 1
-
-        return index
+        matrix = [[float(j) if isinstance(j, int) else j for j in i] for i in matrix]
+        self.__matrix = matrix
 
     @staticmethod
     def chunks(l, n):
@@ -64,16 +51,67 @@ class GenerateTrainSets(object):
 
         :param l: list
         :param n: number of values inside inner list
+
+        :type l: list
+        :type n: int
+
         :return: yields chunks of a list
         """
         for i in range(0, len(l), 1):
             yield l[i:i + n]
 
-    def train_data(self, n_steps):
+    def data_set_separator(self, n_steps, goal_row, goal_as_input=False):
+        """Yields the train sets
+
+        Yields the train sets with the first list being the train set by
+        itself the second list the goal, the output is represented by the
+        following list: [[input_0, input_1, ...input_n], [goal]]
+
+        :param n_steps: Number of siblings periods prior goal
+        :param goal_row: The row containing the model goal
+        :param goal_as_input: whether or not to use the goal as
+            input for the model
+
+        :type n_steps: int
+        :type goal_row: int
+        :type goal_as_input: bool
+
+        :return: Yields lists with in the form [[input_0, input_1, ...input_n], [goal]]
+        :rtype: list
+        """
         data = self.chunks(self.data_set, n_steps)
         for i in data:
             if len(i) == n_steps:
-                yield [f_data for f_data in chain.from_iterable(i)]
+                transposed_data = list(map(list, zip(*i)))
+                goal = transposed_data[goal_row]
 
+                if goal_as_input:
+                    train_data = transposed_data
+                    if None not in goal:
+                        yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
+                else:
+                    train_data = transposed_data[0:goal_row]
+                    if goal[-1] is not None:
+                        yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
 
+    def get_input_max_min(self):
+        """Get rows maximum and minimum values
 
+        Finds the max and min values of the input
+        data set.
+
+        :return: a dict with a list of maximum and minimum values
+            maintaining its index.
+        :rtype: dict
+        """
+        for i in map(list, zip(*self.data_set)):
+            no_none_i = [j for j in i if j is not None]
+            print(min(no_none_i))
+            self.__max.append(max(no_none_i))
+            self.__min.append(min(no_none_i))
+
+        return {"dataset_max_vals": self.__max,
+                "dataset_min_vals": self.__min}
+
+    def update_data_set(self, data_set):
+        self.__init__(data_set)
