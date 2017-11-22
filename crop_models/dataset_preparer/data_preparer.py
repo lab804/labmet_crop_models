@@ -1,6 +1,33 @@
 from itertools import chain
 
 
+class Normalizer(object):
+
+    __norm_ranges = ("zero_one", "less_one_one")
+
+    def __init__(self):
+        pass
+
+    def __check_normalization_rule(self, norm_range):
+        if norm_range not in self.__norm_ranges:
+            raise NameError("The normalization range must be one of "
+                            "the options: \"zero_one\" or \"less_one_one\"")
+
+    def normalize(self, value, max_val, min_val, norm_range="zero_one"):
+        self.__check_normalization_rule(norm_range)
+        if norm_range == "zero_one":
+            return (value - min_val)/(max_val - min_val)
+        else:
+            return (-2*(max_val - value/(max_val - min_val)) + 1) * -1
+
+    def un_normalize(self, value, max_val, min_val, norm_range="zero_one"):
+        self.__check_normalization_rule(norm_range)
+        if norm_range == "zero_one":
+            return value * (max_val - min_val) + min_val
+        else:
+            raise ImportError("Method still not allowed")
+
+
 class GenerateTrainSets(object):
     """Train Set Generator
 
