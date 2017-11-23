@@ -13,7 +13,7 @@ class Normalizer(object):
             raise NameError("The normalization range must be one of "
                             "the options: \"zero_one\" or \"less_one_one\"")
 
-    def normalize(self, value, max_val, min_val, norm_range="zero_one"):
+    def normalize(self, value, min_val, max_val, norm_range="zero_one"):
         self._check_normalization_rule(norm_range)
         if norm_range == "zero_one":
             return (value - min_val)/(max_val - min_val)
@@ -56,19 +56,31 @@ class GenerateTrainSets(object):
         else:
             raise TypeError("The matrix must be an iterable"
                             "object but not a string")
-        self.__max = []
-        self.__min = []
+
+        self.min_max = []
 
     @property
     def data_set(self):
-        return self.__matrix
+        return self.__data_set
 
     @data_set.setter
-    def data_set(self, matrix):
-        if isinstance(matrix, tuple):
-            matrix = [list(i) for i in matrix]
-        matrix = [[float(j) if isinstance(j, int) else j for j in i] for i in matrix]
-        self.__matrix = matrix
+    def data_set(self, data_set):
+        if isinstance(data_set, tuple):
+            data_set = [list(i) for i in data_set]
+            data_set = [[float(j) if isinstance(j, int) else j for j in i] for i in data_set]
+        self.__data_set = data_set
+
+    @property
+    def min_max(self):
+        return self.__min_max
+
+    @min_max.setter
+    def min_max(self, min_max):
+        for i in map(list, zip(*self.data_set)):
+            no_none_i = [j for j in i if j is not None]
+            min_max.append([min(no_none_i), max(no_none_i)])
+        self.__min_max = min_max
+
 
     @staticmethod
     def chunks(l, n):
@@ -121,33 +133,63 @@ class GenerateTrainSets(object):
                     if goal[-1] is not None:
                         yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
 
-    def get_input_max_min(self):
-        """Get rows maximum and minimum values
-
-        Finds the max and min values of the input
-        data set.
-
-        :return: a dict with a list of maximum and minimum values
-            maintaining its index.
-        :rtype: dict
-        """
-        for i in map(list, zip(*self.data_set)):
-            no_none_i = [j for j in i if j is not None]
-            print(min(no_none_i))
-            self.__max.append(max(no_none_i))
-            self.__min.append(min(no_none_i))
-
-        return {"dataset_max_vals": self.__max,
-                "dataset_min_vals": self.__min}
-
     def update_data_set(self, data_set):
         self.__init__(data_set)
 
+
 class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
+    """Normalized Train Set Generator
+
+    Responsible for generating normalized train sets
+    to use as inputs for artificial neural networks
+    and regressive models.
+
+    """
 
     def __init__(self, data_set):
-        GenerateTrainSets.__init__(data_set),
-        Normalizer.__init__()
+        GenerateTrainSets.__init__(self, data_set),
+        Normalizer.__init__(self)
 
-    # def data_set_separator(self, n_steps, goal_row, goal_as_input=False, norm_range=self.__norm_ranges[0]):
-    #     pass
+    def __normalize_matrix(self, data_list):
+        """
+
+        :param data_list:
+        :return:
+        """
+        for data_l, min_max in zip(data_list, self.min_max):
+            yield [self.normalize(i, min_max[0], min_max[1]) if i is not None
+                   else i
+                   for i in data_l]
+
+    def normalized_data_set_separator(self, n_steps, goal_row, goal_as_input=False, norm_range="zero_one"):
+        """
+
+        :param n_steps:
+        :param goal_row:
+        :param goal_as_input:
+        :param norm_range:
+        :return:
+        """
+        self._check_normalization_rule(norm_range)
+        data = self.chunks(self.data_set, n_steps)
+        for i in data:
+            if len(i) == n_steps:
+                transposed_data = list(map(list, zip(*i)))
+                goal = transposed_data[goal_row][-1]
+                if goal_as_input:
+                    train_data = self.__normalize_matrix(transposed_data)
+                    if None not in transposed_data[goal_row]:
+                        yield [[f_data for f_data in chain.from_iterable(train_data)],
+                               [self.normalize(goal,
+                                self.min_max[goal_row][0],
+                                self.min_max[goal_row][1])]
+                               ]
+                else:
+                    goal = transposed_data[goal_row][-1]
+                    train_data = self.__normalize_matrix(transposed_data[0:goal_row])
+                    if goal is not None:
+                        yield [[f_data for f_data in chain.from_iterable(train_data)],
+                               [self.normalize(goal,
+                                self.min_max[goal_row][0],
+                                self.min_max[goal_row][1])]]
+
