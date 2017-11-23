@@ -28,6 +28,8 @@ def gen_train_set(matrix, amounth_before):
     for i in chunks(matrix, amounth_before):
        print(i)
 
-
-for i in data.data_set_separator(3, 9):
+numero_de_valores = 0
+for i in data.data_set_separator(18, 9, goal_as_input=False):
+    numero_de_valores+=1
     print(i)
+print(numero_de_valores)

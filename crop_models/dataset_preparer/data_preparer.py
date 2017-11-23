@@ -8,20 +8,20 @@ class Normalizer(object):
     def __init__(self):
         pass
 
-    def __check_normalization_rule(self, norm_range):
+    def _check_normalization_rule(self, norm_range):
         if norm_range not in self.__norm_ranges:
             raise NameError("The normalization range must be one of "
                             "the options: \"zero_one\" or \"less_one_one\"")
 
     def normalize(self, value, max_val, min_val, norm_range="zero_one"):
-        self.__check_normalization_rule(norm_range)
+        self._check_normalization_rule(norm_range)
         if norm_range == "zero_one":
             return (value - min_val)/(max_val - min_val)
         else:
             return (-2*(max_val - value/(max_val - min_val)) + 1) * -1
 
     def un_normalize(self, value, max_val, min_val, norm_range="zero_one"):
-        self.__check_normalization_rule(norm_range)
+        self._check_normalization_rule(norm_range)
         if norm_range == "zero_one":
             return value * (max_val - min_val) + min_val
         else:
@@ -142,3 +142,12 @@ class GenerateTrainSets(object):
 
     def update_data_set(self, data_set):
         self.__init__(data_set)
+
+class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
+
+    def __init__(self, data_set):
+        GenerateTrainSets.__init__(data_set),
+        Normalizer.__init__()
+
+    # def data_set_separator(self, n_steps, goal_row, goal_as_input=False, norm_range=self.__norm_ranges[0]):
+    #     pass
