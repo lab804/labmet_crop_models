@@ -2,27 +2,89 @@ from itertools import chain
 
 
 class Normalizer(object):
+    """Normalizer
 
-    __norm_ranges = ("zero_one", "less_one_one")
+    Container of normalizer functions intended for 
+    statistical analysis and modeling.
 
-    def __init__(self):
-        pass
+    """
+    __norm_rule = ("zero_one", "less_one_one")
+    __norm_range = ([0, 1], [-1, 1])
 
-    def _check_normalization_rule(self, norm_range):
-        if norm_range not in self.__norm_ranges:
+    def _check_normalization_rule(self, norm_rule):
+        """Check normalization rule
+
+        Checks if normalization rule is available.
+
+        :param norm_rule: Normalization rule
+        :return: None, raises if not implemented
+        """
+        if norm_rule not in self.__norm_rule:
             raise NameError("The normalization range must be one of "
                             "the options: \"zero_one\" or \"less_one_one\"")
 
-    def normalize(self, value, min_val, max_val, norm_range="zero_one"):
-        self._check_normalization_rule(norm_range)
-        if norm_range == "zero_one":
+    def print_normalization_rule(self):
+        """Print normalization rules
+
+        Prints all available rules and ranges.
+
+        :return: None, prints available normalization rule.
+        """
+        for i in zip(self.__norm_rule, self.__norm_range):
+            print("{}, [{}, {}]".format(i[0], i[1][0], i[1][1]))
+
+    def normalize(self, value, min_val, max_val, norm_rule="zero_one"):
+        """Normalize
+
+        Mathematical implementations of normalizations equations.
+
+        :param value: Value to be normalized
+        :param min_val: Minimum value from the domain of the
+         value to be normalized
+        :param max_val: Maximum value from the domain of the
+         value to be normalized
+        :param norm_rule: Normalization rule to be used
+
+        :type value: float
+        :type min_val: float
+        :type max_val: float
+        :type norm_rule: str
+
+
+        :return: Normalized value inside value domain.
+        :rtype: float.
+        """
+        self._check_normalization_rule(norm_rule)
+        if norm_rule == "zero_one":
             return (value - min_val)/(max_val - min_val)
         else:
             return (-2*(max_val - value/(max_val - min_val)) + 1) * -1
 
-    def un_normalize(self, value, max_val, min_val, norm_range="zero_one"):
-        self._check_normalization_rule(norm_range)
-        if norm_range == "zero_one":
+    def un_normalize(self, value, min_val, max_val, norm_rule="zero_one"):
+        """Un normalize
+
+        Inverse mathematical implementations of the normalizations
+        equations, intended to return the value to its original domain.
+
+        :param value: Value to be un-normalized
+        :param min_val: Minimum value from the domain of the
+         value to be un-normalized
+        :param max_val: Maximum value from the domain of the
+         value to be un-normalized
+        :param norm_rule: Normalization rule that the value
+         was originally normalized.
+
+        :type value: float
+        :type min_val: float
+        :type max_val: float
+        :type norm_rule: str
+
+
+        :return: Value in its original domain.
+        :rtype: float.
+        """
+        self._check_normalization_rule(norm_rule)
+        if norm_rule == "zero_one":
             return value * (max_val - min_val) + min_val
         else:
             raise ImportError("Method still not allowed")
@@ -37,13 +99,13 @@ class GenerateTrainSets(object):
 
     """
     def __init__(self, data_set):
-        """Data set inputs
+        """Dataset inputs
 
-        receives a data set in the form of
+        receives a dataset in the form of
         an iterable matrix containing the goal
         of the model
 
-        :param data_set: The data set as iterable
+        :param data_set: The dataset as iterable
         :param goal_row: The goal for the model
 
         :type data_set: iterable (not a string)
@@ -104,7 +166,7 @@ class GenerateTrainSets(object):
 
         Yields the train sets with the first list being the train set by
         itself the second list the goal, the output is represented by the
-        following list: [[input_0, input_1, ...input_n], [goal]]
+        following list: [[input_0, input_1, ...input_n], [goal]].
 
         :param n_steps: Number of siblings periods prior goal
         :param goal_row: The row containing the model goal
@@ -115,7 +177,8 @@ class GenerateTrainSets(object):
         :type goal_row: int
         :type goal_as_input: bool
 
-        :return: Yields lists with in the form [[input_0, input_1, ...input_n], [goal]]
+        :return: Yields lists with the
+         form [[input_0, input_1, ...input_n], [goal]]
         :rtype: list
         """
         data = self.chunks(self.data_set, n_steps)
@@ -134,6 +197,13 @@ class GenerateTrainSets(object):
                         yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
 
     def update_data_set(self, data_set):
+        """Updates instance with new dataset
+
+        Updates an instanced object with a new dataset to be processed
+
+        :param data_set:
+        :return:
+        """
         self.__init__(data_set)
 
 
@@ -151,26 +221,43 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
         Normalizer.__init__(self)
 
     def __normalize_matrix(self, data_list):
-        """
+        """Normalize matrices
+
+        Helper function to normalize multidimensional lists.
 
         :param data_list:
-        :return:
+        :return: yield list with normalized values
+        :rtype: generator
         """
         for data_l, min_max in zip(data_list, self.min_max):
             yield [self.normalize(i, min_max[0], min_max[1]) if i is not None
                    else i
                    for i in data_l]
 
-    def normalized_data_set_separator(self, n_steps, goal_row, goal_as_input=False, norm_range="zero_one"):
-        """
+    def normalized_data_set_separator(self, n_steps, goal_row, goal_as_input=False, norm_rule="zero_one"):
+        """Creates normalized datasets
 
-        :param n_steps:
-        :param goal_row:
-        :param goal_as_input:
-        :param norm_range:
-        :return:
+        Creates normalized datasets intended to be used in
+        the training stage of regressive models, specially
+        neural networks. This methods returns an generator
+        of lists with normalized values with the following
+        form: [[input_0, input_1, ...input_n], [goal]].
+
+        :param n_steps: Number of accumulated convoluted steps
+         to be returned in the first index of the generated lists.
+        :param goal_row: The row containing the model goal
+        :param goal_as_input: whether or not to use the goal as
+            input for the model
+
+        :type n_steps: int
+        :type goal_row: int
+        :type goal_as_input: bool
+
+        :return: Yields lists with normalized values
+         in the form [[input_0, input_1, ...input_n], [goal]]
+        :rtype: generator
         """
-        self._check_normalization_rule(norm_range)
+        self._check_normalization_rule(norm_rule)
         data = self.chunks(self.data_set, n_steps)
         for i in data:
             if len(i) == n_steps:
@@ -192,4 +279,28 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
                                [self.normalize(goal,
                                 self.min_max[goal_row][0],
                                 self.min_max[goal_row][1])]]
+
+    def un_normalize_list(self, uni_dimensional_list, sibling_row, norm_rule="zero_one"):
+        """Un-normalize uni-dimensional lists
+
+        Un-normalizes one dimension lists, returning
+        it to its original form and domain.
+
+        :param uni_dimensional_list: One dimension list
+        :param sibling_row: The row of the original dataset that
+         this list represents.
+        :param norm_rule: Normalization rule
+
+        :type uni_dimensional_list: list or generator
+        :type sibling_row: int
+        :type norm_rule: str
+
+        :return: List with its original form and domain
+        :rtype: list
+        """
+        return [self.un_normalize(i,
+                                  self.min_max[sibling_row][0],
+                                  self.min_max[sibling_row][1],
+                                  norm_rule)
+                for i in uni_dimensional_list]
 

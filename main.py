@@ -35,15 +35,25 @@ def gen_train_set(matrix, amounth_before):
 #     print(i)
 
 
-
 gen_norm_train_set = GenerateNormalizedTrainSets(data.data())
+
 count = 0
 print(gen_norm_train_set.min_max)
-for i, j in zip(gen_norm_train_set.normalized_data_set_separator(1, 9, True, norm_range="zero_one"),
+for i, j in zip(gen_norm_train_set.normalized_data_set_separator(1, 9, True, norm_rule="zero_one"),
              gen_norm_train_set.data_set_separator(1, 9, goal_as_input=True)):
     count += 1
     print(count)
     print(j)
     print(i)
 
-# print(gen_norm_train_set.data_set_separator())
+# data_test = gen_norm_train_set.data_set
+# matrix = list(map(list, zip(*data_test)))[0]
+# print(matrix)
+# norm_data_test = gen_norm_train_set.normalized_data_set_separator(1, 9, goal_as_input=True)
+# norm_data_test = [i[0][0] for i in norm_data_test]
+# normalizado = gen_norm_train_set.un_normalize_list(norm_data_test, 0)
+# for i, j in zip(normalizado, norm_data_test):
+#     print("real", i, "padronizado: ", j)
+# gen_norm_train_set.print_normalization_rule()
+
+    # print(gen_norm_train_set.data_set_separator())
