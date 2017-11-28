@@ -18,7 +18,7 @@ class TimeSeriesMLPMultivariate(object):
 
     # __base_dir = os.path.dirname(os.path.abspath(__file__)).split("labmet_ann")[0]
 
-    def __init__(self, hidden_layers,
+    def __init__(self, hidden_layers, data_range_matrix,
                  train_alg="train_gdx", error_function="mse"):
 
         self.hidden_layers = hidden_layers
@@ -33,6 +33,7 @@ class TimeSeriesMLPMultivariate(object):
         else:
             self.error_function = error_function
 
+        self.data_range_matrix = data_range_matrix
         self.ann = self.__ann()
 
     @classmethod
@@ -58,7 +59,7 @@ class TimeSeriesMLPMultivariate(object):
 
         :return:
         """
-        ann = nl.net.newff(minmax=self.__train_data_range(),
+        ann = nl.net.newff(minmax=self.data_range_matrix,
                            size=self.hidden_layers)
         ann.errorf = error_functions[self.error_function]
         ann.trainf = mlp_train_algorithm[self.train_alg]
@@ -66,6 +67,7 @@ class TimeSeriesMLPMultivariate(object):
             l.initf = nl.init.InitRand([0.001, 0.8], 'wb')
 
         return ann
+
 
 class TimeSeriesMLPMultivariateTemp(object):
     """ Time Series Multilayer Perceptron Ann
