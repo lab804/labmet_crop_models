@@ -16,6 +16,66 @@ class TimeSeriesMLPMultivariate(object):
 
     """
 
+    # __base_dir = os.path.dirname(os.path.abspath(__file__)).split("labmet_ann")[0]
+
+    def __init__(self, hidden_layers,
+                 train_alg="train_gdx", error_function="mse"):
+
+        self.hidden_layers = hidden_layers
+
+        if train_alg not in mlp_train_algorithm:
+            raise (TrainAlgorithmException("This is not an valid Train Algorithm"))
+        else:
+            self.train_alg = train_alg
+
+        if error_function not in error_functions:
+            raise (TrainAlgorithmException("This is not an valid error function"))
+        else:
+            self.error_function = error_function
+
+        self.ann = self.__ann()
+
+    @classmethod
+    def load(cls, ann_filename):
+        """
+
+        :param ann_filename:
+        :return:
+        """
+        f_name = "{}.pkl".format(ann_filename)
+        if os.path.exists( f_name):
+            with open("{}.pkl".format(ann_filename), "rb") as ann_file:
+                ann = pickle.load(ann_file)
+            if not isinstance(ann, cls):
+                raise AnnFileTypeException("This is not an valid "
+                                           "TimeSeriesMLPMultivariate file type")
+            return ann
+        else:
+            raise FileExistsError("The ann file was't found")
+
+    def __ann(self):
+        """
+
+        :return:
+        """
+        ann = nl.net.newff(minmax=self.__train_data_range(),
+                           size=self.hidden_layers)
+        ann.errorf = error_functions[self.error_function]
+        ann.trainf = mlp_train_algorithm[self.train_alg]
+        for l in ann.layers:
+            l.initf = nl.init.InitRand([0.001, 0.8], 'wb')
+
+        return ann
+
+class TimeSeriesMLPMultivariateTemp(object):
+    """ Time Series Multilayer Perceptron Ann
+
+    This class is responsible for wrapping and acting
+    as a proxy to the neurolab's multilayer perceptron function and
+    its correlated pseudo methods.
+
+    """
+
     __base_dir = os.path.dirname(os.path.abspath(__file__)).split("labmet_ann")[0]
 
     def __init__(self, train_data, validation_data,
