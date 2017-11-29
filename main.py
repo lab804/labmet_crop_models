@@ -1,6 +1,8 @@
 from crop_models.xlsxreader.xlsxreader import ExcelDataReader
 from crop_models.dataset_preparer.data_preparer import GenerateTrainSets, \
     GenerateNormalizedTrainSets
+from crop_models.ann.multilayerperceptron import TimeSeriesMLPMultivariate
+
 data = ExcelDataReader("dados_usm_estruturados.xlsx", l1=1,
                        usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
 
@@ -18,6 +20,9 @@ gen_train_sets = GenerateTrainSets(data.data())
 gen_norm_train_set = GenerateNormalizedTrainSets(data.data())
 dataset = gen_norm_train_set.normalized_data_set_separator(1, 9, True, norm_rule="zero_one")
 
+print(gen_norm_train_set.normalized_min_max())
+
+multi_layer_perceptron = TimeSeriesMLPMultivariate([4, 4, 1], gen_norm_train_set.normalized_min_max())
 
 
 

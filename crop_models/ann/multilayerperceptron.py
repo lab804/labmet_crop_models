@@ -18,10 +18,10 @@ class TimeSeriesMLPMultivariate(object):
 
     # __base_dir = os.path.dirname(os.path.abspath(__file__)).split("labmet_ann")[0]
 
-    def __init__(self, hidden_layers, data_range_matrix,
+    def __init__(self, topology, data_range_matrix,
                  train_alg="train_gdx", error_function="mse"):
 
-        self.hidden_layers = hidden_layers
+        self.hidden_layers = topology
 
         if train_alg not in mlp_train_algorithm:
             raise (TrainAlgorithmException("This is not an valid Train Algorithm"))
@@ -33,7 +33,7 @@ class TimeSeriesMLPMultivariate(object):
         else:
             self.error_function = error_function
 
-        self.data_range_matrix = data_range_matrix
+        self.data_range_matrix = np.array(data_range_matrix)
         self.ann = self.__ann()
 
     @classmethod
@@ -44,7 +44,7 @@ class TimeSeriesMLPMultivariate(object):
         :return:
         """
         f_name = "{}.pkl".format(ann_filename)
-        if os.path.exists( f_name):
+        if os.path.exists(f_name):
             with open("{}.pkl".format(ann_filename), "rb") as ann_file:
                 ann = pickle.load(ann_file)
             if not isinstance(ann, cls):
@@ -61,8 +61,10 @@ class TimeSeriesMLPMultivariate(object):
         """
         ann = nl.net.newff(minmax=self.data_range_matrix,
                            size=self.hidden_layers)
+
         ann.errorf = error_functions[self.error_function]
         ann.trainf = mlp_train_algorithm[self.train_alg]
+
         for l in ann.layers:
             l.initf = nl.init.InitRand([0.001, 0.8], 'wb')
 

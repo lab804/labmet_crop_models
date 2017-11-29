@@ -220,6 +220,10 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
         GenerateTrainSets.__init__(self, data_set),
         Normalizer.__init__(self)
 
+    def normalized_min_max(self, norm_rule="zero_one"):
+        return [[self.normalize(i[0], *i, norm_rule=norm_rule),
+                 self.normalize(i[1], *i, norm_rule=norm_rule)] for i in self.min_max]
+
     def __normalize_matrix(self, data_list):
         """Normalize matrices
 
