@@ -18,14 +18,14 @@ gen_train_sets = GenerateTrainSets(data.data())
 
 
 gen_norm_train_set = GenerateNormalizedTrainSets(data.data())
-dataset = gen_norm_train_set.normalized_data_set_separator(1, 9, True, norm_rule="zero_one")
+dataset = gen_norm_train_set.normalized_data_set_separator(1, 9, False, norm_rule="zero_one")
 
-print(gen_norm_train_set.normalized_min_max())
+# print(gen_norm_train_set.normalized_min_max())
 
-multi_layer_perceptron = TimeSeriesMLPMultivariate([4, 4, 1], gen_norm_train_set.normalized_min_max())
+mlp = TimeSeriesMLPMultivariate([4, 4, 1], gen_norm_train_set.normalized_min_max())
 
-
-
+min_error = mlp.train(dataset)
+print(min_error[-1])
 
 # data_test = gen_norm_train_set.data_set
 # matrix = list(map(list, zip(*data_test)))[0]

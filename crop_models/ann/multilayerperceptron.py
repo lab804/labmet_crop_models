@@ -2,6 +2,7 @@ import numpy as np
 import neurolab as nl
 import os
 import pickle
+import matplotlib
 
 from crop_models.ann.config import *
 from crop_models.ann.annexceptions import *
@@ -70,17 +71,28 @@ class TimeSeriesMLPMultivariate(object):
 
         return ann
 
-    def train(self,train_data, target_data, show=1, **kwargs):
+    def train(self, trainset, show=1, plot=True, **kwargs):
         """
 
+        :param train_data:
+        :param target_data:
         :param show:
         :param kwargs:
         :return:
         """
-        return self.ann.train(input=train_data,
-                              target=target_data,
-                              show=show,
-                              **kwargs)
+        train_data = []
+        target_data = []
+        for i in trainset:
+            train_data.append(i[0])
+            target_data.append(i[1])
+        error_matrix = self.ann.train(input=train_data,
+                                      target=target_data,
+                                      show=show,
+                                      **kwargs)
+        # if plot:
+        #     p
+
+        return error_matrix
 
     def out(self, real_world_data):
         """
