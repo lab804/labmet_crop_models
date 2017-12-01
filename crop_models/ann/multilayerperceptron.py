@@ -70,6 +70,25 @@ class TimeSeriesMLPMultivariate(object):
 
         return ann
 
+    def train(self,train_data, target_data, show=1, **kwargs):
+        """
+
+        :param show:
+        :param kwargs:
+        :return:
+        """
+        return self.ann.train(input=train_data,
+                              target=target_data,
+                              show=show,
+                              **kwargs)
+
+    def out(self, real_world_data):
+        """
+
+        :return:
+        """
+        return self.ann.sim(real_world_data)
+
 
 class TimeSeriesMLPMultivariateTemp(object):
     """ Time Series Multilayer Perceptron Ann
