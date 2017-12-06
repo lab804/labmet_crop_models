@@ -19,7 +19,7 @@ class TimeSeriesMLPMultivariate(object):
 
     # __base_dir = os.path.dirname(os.path.abspath(__file__)).split("labmet_ann")[0]
 
-    def __init__(self, topology, data_range_matrix,
+    def __init__(self, topology,
                  train_alg="train_gdx", error_function="mse"):
 
         self.hidden_layers = topology
@@ -34,8 +34,8 @@ class TimeSeriesMLPMultivariate(object):
         else:
             self.error_function = error_function
 
-        self.data_range_matrix = np.array(data_range_matrix)
-        self.ann = self.__ann()
+        # self.data_range_matrix = np.array(data_range_matrix)
+        self.ann = None
 
     @classmethod
     def load(cls, ann_filename):
@@ -55,12 +55,22 @@ class TimeSeriesMLPMultivariate(object):
         else:
             raise FileExistsError("The ann file was't found")
 
-    def __ann(self):
+    @staticmethod
+    def __train_data_range(data):
         """
 
         :return:
         """
-        ann = nl.net.newff(minmax=self.data_range_matrix,
+        if not isinstance(data, np.ndarray):
+            data = np.array(data)
+        return [[np.min(i), np.max(i)] for i in data.transpose()]
+
+    def __ann(self, data_range_matrix):
+        """
+
+        :return:
+        """
+        ann = nl.net.newff(minmax=data_range_matrix,
                            size=self.hidden_layers)
 
         ann.errorf = error_functions[self.error_function]
@@ -69,6 +79,7 @@ class TimeSeriesMLPMultivariate(object):
         for l in ann.layers:
             l.initf = nl.init.InitRand([0.001, 0.8], 'wb')
 
+        self.ann = ann
         return ann
 
     def train(self, trainset, show=1, plot=True, **kwargs):
@@ -85,11 +96,15 @@ class TimeSeriesMLPMultivariate(object):
         for i in trainset:
             train_data.append(i[0])
             target_data.append(i[1])
+
+        range_matrix = self.__train_data_range(train_data)
+        print(range_matrix)
+        self.ann = self.__ann(range_matrix)
         error_matrix = self.ann.train(input=train_data,
                                       target=target_data,
                                       show=show,
                                       **kwargs)
-        # if plot:
+        # # if plot:
         #     p
 
         return error_matrix
