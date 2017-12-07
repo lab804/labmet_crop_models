@@ -18,13 +18,13 @@ gen_train_sets = GenerateTrainSets(data.data())
 
 
 gen_norm_train_set = GenerateNormalizedTrainSets(data.data())
-dataset = gen_norm_train_set.normalized_data_set_separator(1, 9, True, norm_rule="zero_one")
+dataset = gen_norm_train_set.normalized_data_set_separator(1, 9, False, norm_rule="zero_one")
 
 # print(gen_norm_train_set.normalized_min_max())
 
 mlp = TimeSeriesMLPMultivariate([4, 4, 1])
 
-min_error = mlp.train(dataset)
+min_error = mlp.train(dataset, save_plot=True)
 print(min_error[-1])
 
 # data_test = gen_norm_train_set.data_set

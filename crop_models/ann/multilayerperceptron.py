@@ -2,7 +2,7 @@ import numpy as np
 import neurolab as nl
 import os
 import pickle
-import matplotlib
+import pylab as pl
 
 from crop_models.ann.config import *
 from crop_models.ann.annexceptions import *
@@ -82,7 +82,15 @@ class TimeSeriesMLPMultivariate(object):
         self.ann = ann
         return ann
 
-    def train(self, trainset, show=1, plot=True, **kwargs):
+    def __plot(self, *args, save_plot=False, **kwargs):
+        pl.plot(*args)
+        pl.xlabel(kwargs["x_label"]),
+        pl.ylabel(kwargs["y_label"])
+        if save_plot:
+            pl.savefig(filename=kwargs["filename"])
+        pl.show()
+
+    def train(self, trainset, show=1, plot=True, save_plot=False, **kwargs):
         """
 
         :param train_data:
@@ -104,8 +112,11 @@ class TimeSeriesMLPMultivariate(object):
                                       target=target_data,
                                       show=show,
                                       **kwargs)
-        # # if plot:
-        #     p
+        self.__plot(error_matrix,
+                    x_label='Epoch number(Numero da epoca)',
+                    y_label='error function valeu({})'.format(self.error_function.upper()),
+                    save_plot=save_plot,
+                    filename="train_plt")
 
         return error_matrix
 
