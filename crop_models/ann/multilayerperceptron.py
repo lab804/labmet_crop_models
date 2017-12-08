@@ -34,8 +34,8 @@ class TimeSeriesMLPMultivariate(object):
         else:
             self.error_function = error_function
 
-        # self.data_range_matrix = np.array(data_range_matrix)
         self.ann = None
+        self.__trainset = None
 
     @classmethod
     def load(cls, ann_filename):
@@ -59,11 +59,23 @@ class TimeSeriesMLPMultivariate(object):
     def __train_data_range(data):
         """
 
+        :param data:
+
+        :type data: list or ndarray
         :return:
         """
         if not isinstance(data, np.ndarray):
             data = np.array(data)
         return [[np.min(i), np.max(i)] for i in data.transpose()]
+
+    @staticmethod
+    def __plot(*args, save_plot=False, **kwargs):
+        pl.plot(*args)
+        pl.xlabel(kwargs["x_label"]),
+        pl.ylabel(kwargs["y_label"])
+        if save_plot:
+            pl.savefig(filename=kwargs["filename"])
+        pl.show()
 
     def __ann(self, data_range_matrix):
         """
@@ -82,20 +94,13 @@ class TimeSeriesMLPMultivariate(object):
         self.ann = ann
         return ann
 
-    def __plot(self, *args, save_plot=False, **kwargs):
-        pl.plot(*args)
-        pl.xlabel(kwargs["x_label"]),
-        pl.ylabel(kwargs["y_label"])
-        if save_plot:
-            pl.savefig(filename=kwargs["filename"])
-        pl.show()
-
     def train(self, trainset, show=1, plot=True, save_plot=False, **kwargs):
         """
 
-        :param train_data:
-        :param target_data:
+        :param trainset:
         :param show:
+        :param plot:
+        :param save_plot:
         :param kwargs:
         :return:
         """
@@ -106,19 +111,24 @@ class TimeSeriesMLPMultivariate(object):
             target_data.append(i[1])
 
         range_matrix = self.__train_data_range(train_data)
-        print(range_matrix)
+
         self.ann = self.__ann(range_matrix)
         error_matrix = self.ann.train(input=train_data,
                                       target=target_data,
                                       show=show,
                                       **kwargs)
-        self.__plot(error_matrix,
-                    x_label='Epoch number(Numero da epoca)',
-                    y_label='error function valeu({})'.format(self.error_function.upper()),
-                    save_plot=save_plot,
-                    filename="train_plt")
+        if plot:
+            self.__plot(error_matrix,
+                        x_label='Epoch number(Numero da epoca)',
+                        y_label='error function valeu({})'.format(self.error_function.upper()),
+                        save_plot=save_plot,
+                        filename="train_plt")
 
         return error_matrix
+
+    def sim(self):
+        if self.ann is None:
+            raise AnnTrainException("It's required to train an Artificial Neural Network beg")
 
     def out(self, real_world_data):
         """
