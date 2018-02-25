@@ -4,7 +4,7 @@ from crop_models.dataset_preparer.data_preparer import GenerateTrainSets, \
 from crop_models.ann.multilayerperceptron import TimeSeriesMLPMultivariate
 
 data = ExcelDataReader("dados_usm_estruturados.xlsx", l1=1,
-                       usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 10))
+                       usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
 
 print(len(data.data()))
 # data = "dasdas"
@@ -19,13 +19,12 @@ validation_set = GenerateNormalizedTrainSets(data.data()[396:])
 
 # gen_norm_train_set = GenerateNormalizedTrainSets(data.data())
 dataset = gen_train_sets.normalized_data_set_separator(10, 9, False, norm_rule="zero_one")
-# print(dataset)
+
 # print(gen_norm_train_set.normalized_min_max())
 
-mlp = TimeSeriesMLPMultivariate([50, 10, 1], train_alg="train_bfgs")
+mlp = TimeSeriesMLPMultivariate([30, 10, 1], train_alg="train_rprop")
 
-min_error = mlp.train(dataset, save_plot=True, epochs=50, goal=0.000001)
-print(min_error[-1])
+min_error = mlp.train(dataset, save_plot=True, epochs=120, goal=0.000001)
 
 print(mlp.sim(x_label="TCH previsto", y_label="TCH real"))
 print(mlp.out(validation_set.normalized_data_set_separator(10, 9, False, norm_rule="zero_one"),

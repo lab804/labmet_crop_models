@@ -78,7 +78,7 @@ class TimeSeriesMLPMultivariate(object):
         pl.xlabel(kwargs["x_label"]),
         pl.ylabel(kwargs["y_label"])
         if save_plot:
-            pl.savefig(filename=kwargs["filename"])
+            pl.savefig(fname=kwargs["filename"])
         pl.show()
 
     def __ann(self, data_range_matrix):
@@ -93,7 +93,7 @@ class TimeSeriesMLPMultivariate(object):
         ann.trainf = mlp_train_algorithm[self.train_alg]
 
         for l in ann.layers:
-            l.transf = nl.trans.SoftMax()
+            # l.transf = nl.trans.SoftMax()
             l.initf = nl.init.InitRand([0.001, 0.1], 'wb')
 
         self.ann = ann
