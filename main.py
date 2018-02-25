@@ -22,9 +22,9 @@ dataset = gen_train_sets.normalized_data_set_separator(10, 9, False, norm_rule="
 
 # print(gen_norm_train_set.normalized_min_max())
 
-mlp = TimeSeriesMLPMultivariate([30, 10, 1], train_alg="train_rprop")
+mlp = TimeSeriesMLPMultivariate([70, 30, 1], train_alg="train_rprop")
 
-min_error = mlp.train(dataset, save_plot=True, epochs=120, goal=0.000001)
+min_error = mlp.train(dataset, save_plot=True, epochs=470, goal=0.000001)
 
 print(mlp.sim(x_label="TCH previsto", y_label="TCH real"))
 print(mlp.out(validation_set.normalized_data_set_separator(10, 9, False, norm_rule="zero_one"),
