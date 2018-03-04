@@ -131,7 +131,7 @@ class TimeSeriesMLPMultivariate(object):
 
         return error_matrix
 
-    def sim(self, save_plot=False, plot=True, plot_type='scatter', **kwargs):
+    def sim(self, save_plot=False, plot=True, plot_type='scatter', filename="train_plt", **kwargs):
 
 
         if self.ann is None:
@@ -145,16 +145,16 @@ class TimeSeriesMLPMultivariate(object):
             if plot_type == 'plot':
                 self.__plot(x, sim_values, x, self.__target_data,plot_type='plot',
                             save_plot=save_plot,
-                            filename="train_plt",
+                            filename=filename,
                             **kwargs)
             elif plot_type == 'scatter':
                 self.__plot(sim_values, self.__target_data, plot_type='scatter',
                             save_plot=save_plot,
-                            filename="train_plt",
+                            filename=filename,
                             **kwargs)
         return sim_values
 
-    def out(self, real_world_data, save_plot=False, plot=True, plot_type='scatter', **kwargs):
+    def out(self, real_world_data, save_plot=False, plot=True, plot_type='scatter', filename="train_plt", **kwargs):
         """
 
         :return:
@@ -171,12 +171,12 @@ class TimeSeriesMLPMultivariate(object):
             if plot_type == 'plot':
                 self.__plot(x, out_values, x, validation_data, plot_type='plot',
                             save_plot=save_plot,
-                            filename="train_plt",
+                            filename=filename,
                             **kwargs)
             elif plot_type == 'scatter':
                 self.__plot(out_values, validation_data, plot_type='scatter',
                             save_plot=save_plot,
-                            filename="train_plt",
+                            filename=filename,
                             **kwargs)
 
         return out_values

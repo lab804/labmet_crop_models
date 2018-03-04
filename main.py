@@ -26,11 +26,13 @@ mlp = TimeSeriesMLPMultivariate([70, 30, 1], train_alg="train_rprop")
 
 min_error = mlp.train(dataset, save_plot=True, epochs=470, goal=0.000001)
 
-print(mlp.sim(x_label="TCH previsto", y_label="TCH real"))
-print(mlp.out(validation_set.normalized_data_set_separator(10, 9, False, norm_rule="zero_one"),
-              x_label="TCH previsto", y_label="TCH real"))
-print(mlp.out(validation_set.normalized_data_set_separator(10, 9, False, norm_rule="zero_one"),
-              x_label="TCH previsto", y_label="TCH real", plot_type='plot'))
+mlp.sim(x_label="TCH estimado", y_label="TCH real", save_plot=True, filename="estimado_scatter")
+
+mlp.out(validation_set.normalized_data_set_separator(10, 9, False, norm_rule="zero_one"),
+              x_label="TCH previsto", y_label="TCH real", save_plot=True, filename="previsto_scatter")
+
+mlp.out(validation_set.normalized_data_set_separator(10, 9, False, norm_rule="zero_one"),
+              x_label="TCH previsto", y_label="TCH real", plot_type='plot', save_plot=True, filename="previsto_line")
 # data_test = gen_norm_train_set.data_set
 # matrix = list(map(list, zip(*data_test)))[0]
 # print(matrix)
