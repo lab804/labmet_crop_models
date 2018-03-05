@@ -94,12 +94,15 @@ class TimeSeriesMLPMultivariate(object):
 
         for l in ann.layers:
             # l.transf = nl.trans.SoftMax()
-            l.initf = nl.init.InitRand([0.001, 0.1], 'wb')
+            # l.transf = nl.trans.SatLins()
+            l.transf = nl.trans.LogSig()
+
+            l.initf = nl.init.InitRand([0.001, 0.002], 'wb')
 
         self.ann = ann
         return ann
 
-    def train(self, train_set, show=1, plot=True, save_plot=False, **kwargs):
+    def train(self, train_set, show=1, plot=True, save_plot=False, filename="train_plt", **kwargs):
         """
 
         :param train_set:
@@ -127,7 +130,7 @@ class TimeSeriesMLPMultivariate(object):
                         x_label='Epoch number(Numero da epoca)',
                         y_label='error function valeu({})'.format(self.error_function.upper()),
                         save_plot=save_plot,
-                        filename="train_plt")
+                        filename=filename)
 
         return error_matrix
 
@@ -181,6 +184,32 @@ class TimeSeriesMLPMultivariate(object):
 
         return out_values
 
+    def __pickle_helper(self, f_name):
+        """
+
+        :param f_name:
+        :return:
+        """
+        with open(f_name, "wb") as ann_file:
+            pickle.dump(self, ann_file, pickle.HIGHEST_PROTOCOL)
+
+    def save(self, ann_filename):
+        """
+
+        :param ann_filename:
+        :return:
+        """
+        f_name = "{}.pkl".format(ann_filename)
+        if not os.path.exists( f_name):
+            self.__pickle_helper(f_name)
+        else:
+            f_name_index = 1
+            new_f_name = "{}_copy_{}.pkl".format(ann_filename, f_name_index)
+
+            while os.path.exists(new_f_name):
+                f_name_index += 1
+                new_f_name = "{}_copy_{}.pkl".format(ann_filename, f_name_index)
+            self.__pickle_helper(new_f_name)
 
 class TimeSeriesMLPMultivariateTemp(object):
     """ Time Series Multilayer Perceptron Ann
