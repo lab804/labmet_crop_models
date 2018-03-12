@@ -234,3 +234,5 @@ $RECYCLE.BIN/
 
 .idea
 .~lock*
+
+train_anns

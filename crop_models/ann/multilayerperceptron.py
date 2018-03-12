@@ -79,7 +79,10 @@ class TimeSeriesMLPMultivariate(object):
         pl.ylabel(kwargs["y_label"])
         if save_plot:
             pl.savefig(fname=kwargs["filename"])
-        pl.show()
+        if "show" in kwargs:
+            pl.show()
+        else:
+            pl.close()
 
     def __ann(self, data_range_matrix):
         """
