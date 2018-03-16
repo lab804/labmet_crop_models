@@ -362,7 +362,8 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
                 count_register = 0
             if count_seasons == n_seasons:
                 count_seasons = 0
-
+        for i in new_data:
+            print(i)
         return_data = defaultdict(list)
 
         for i in new_data:

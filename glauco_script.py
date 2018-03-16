@@ -91,10 +91,10 @@ def train_ann(goal_type='atr', n_steps=10,
 
 
 def month_ann(goal_type='atr', n_steps=10,
-              shape=[60, 30, 1], train_alg="train_rprop",
-              epochs=500, goal=0.000001, adapt=False):
-    base_name = "train_anns/{}_{}_steps_{}_{}_{}_{}_adapt_{}".format(goal_type, n_steps, train_alg,
-                                                                     shape[0], shape[1], shape[2], adapt)
+              shape=[60, 1], train_alg="train_rprop",
+              epochs=500, goal=0.000001, adapt=False, show=1):
+    base_name = "train_anns/{}_{}_steps_{}_{}_adapt_{}".format(goal_type, n_steps, train_alg,
+                                                                     "_".join(map(str, shape)), adapt)
     base_path_name = "/".join([base_path, base_name])
     str_template = "{}/{}_{}_mes"
 
@@ -113,12 +113,15 @@ def month_ann(goal_type='atr', n_steps=10,
 
     gen_train_sets = GenerateSeasonedNormalizedTrainSets(data.data()[0:396])
     validation_set = GenerateSeasonedNormalizedTrainSets(data.data()[396:])
-    dataset = gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="zero_one")
+    for k, v in gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one").items():
+        print(k, len(v))
+
+    dataset = gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")
     for k, v in dataset.items():
         mlp = TimeSeriesMLPMultivariate(shape, train_alg)
         if train_alg != "train_ncg":
             min_error = mlp.train(v, save_plot=True, filename=str_template.format(base_path_name, "train_stage", k),
-                                  epochs=epochs, goal=goal, adapt=adapt)
+                                  epochs=epochs, goal=goal, adapt=adapt, show=show)
         else:
             min_error = mlp.train(v, save_plot=True, filename=str_template.format(base_path_name, "train_stage", k),
                                   epochs=epochs, goal=goal)
@@ -126,11 +129,11 @@ def month_ann(goal_type='atr', n_steps=10,
         sim = mlp.sim(x_label="{} estimado".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
                       save_plot=True, filename=str_template.format(base_path_name, "estimado_scatter", k))
 
-        mlp.out(validation_set.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="zero_one")[k],
+        mlp.out(validation_set.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")[k],
                 x_label="{} previsto".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
                 save_plot=True, filename=str_template.format(base_path_name, "previsto_scatter", k))
 
-        val_data_set = validation_set.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="zero_one")[k]
+        val_data_set = validation_set.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")[k]
         predicted = mlp.out(
             val_data_set,
             x_label="{} previsto".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
@@ -138,10 +141,10 @@ def month_ann(goal_type='atr', n_steps=10,
 
         mlp.save(str_template.format(base_path_name, "ann", k))
         try:
-            r_q_est = r_sqrt(gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="zero_one")[k],
+            r_q_est = r_sqrt(gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")[k],
                              sim)
 
-            r_q = r_sqrt(validation_set.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="zero_one")[k],
+            r_q = r_sqrt(validation_set.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")[k],
                          predicted)
         except:
             r_q_est = 0
@@ -164,17 +167,27 @@ def month_ann(goal_type='atr', n_steps=10,
         with open("{}/{}".format(base_path_name, "r_squared_forecast{}_mes.txt".format(k)), "wb") as f:
             f.write(bytes("{};\n".format(r_q), encoding='utf8'))
 
+# siglas:
+#     uir = usina iracemapolis
+#     usm = usina sao martinho
+#     usc = usina sao carlos
+#     ubv = usina boa vista
+
 if __name__ == '__main__':
     # month_ann('atr', 3, [60, 20, 1], "train_rprop", epochs=400)
-    shape = [60, 20, 1]
-    for n_steps in range(1, 36):
+    shape = [40, 10,1]
+    for n_steps in range(15, 36):
         try:
-            month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
-            month_ann('tch', n_steps, shape, "train_rprop", epochs=400)
-            month_ann('atr', n_steps, shape, "train_ncg")
+            # month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
+
+            month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50)
+            # month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50, adapt=True)
+
+            # month_ann('atr', n_steps, shape, "train_ncg")
             month_ann('tch', n_steps, shape, "train_ncg")
-            month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
-            month_ann('tch', n_steps, shape, "train_gdx", epochs=760)
+            # month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
+            month_ann('tch', n_steps, shape, "train_gdx", epochs=900, show=50)
+            # month_ann('tch', n_steps, shape, "train_gdx", adapt=True, epochs=900, show=50)
         except Exception as e:
             print(e)
 

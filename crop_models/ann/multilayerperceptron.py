@@ -78,7 +78,10 @@ class TimeSeriesMLPMultivariate(object):
         pl.xlabel(kwargs["x_label"]),
         pl.ylabel(kwargs["y_label"])
         if save_plot:
-            pl.savefig(fname=kwargs["filename"])
+            try:
+                pl.savefig(fname=kwargs["filename"])
+            except:
+                pl.savefig(filename=kwargs["filename"])
         if "show" in kwargs:
             pl.show()
         else:
@@ -94,13 +97,14 @@ class TimeSeriesMLPMultivariate(object):
 
         ann.errorf = error_functions[self.error_function]
         ann.trainf = mlp_train_algorithm[self.train_alg]
-
+        #todo deixar isso como opcao.
         for l in ann.layers:
             # l.transf = nl.trans.SoftMax()
             # l.transf = nl.trans.SatLins()
-            l.transf = nl.trans.LogSig()
-
-            l.initf = nl.init.InitRand([0.001, 0.002], 'wb')
+            # l.transf = nl.trans.LogSig()
+            l.transf = nl.trans.TanSig()
+            # l.initf = nl.init.InitRand([0.001, 0.002], 'wb')
+            l.initf = nl.init.InitRand([-0.01, 0.02], 'wb')
 
         self.ann = ann
         return ann
@@ -122,6 +126,7 @@ class TimeSeriesMLPMultivariate(object):
             self.__target_data.append(i[1])
 
         range_matrix = self.__train_data_range(self.__train_data)
+
 
         self.ann = self.__ann(range_matrix)
         error_matrix = self.ann.train(input=self.__train_data,
