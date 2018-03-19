@@ -59,7 +59,7 @@ class Normalizer(object):
         if norm_rule == "zero_one":
             return (value - min_val)/(max_val - min_val)
         else:
-            return (-2*(max_val - value/(max_val - min_val)) + 1) * -1
+            return ((-2*(max_val - value)/(max_val - min_val)) + 1) * -1
 
     def un_normalize(self, value, min_val, max_val, norm_rule="zero_one"):
         """Un normalize
@@ -88,7 +88,7 @@ class Normalizer(object):
         if norm_rule == "zero_one":
             return value * (max_val - min_val) + min_val
         else:
-            raise ImportError("Method still not allowed")
+            raise Exception("Method still not allowed")
 
 
 class GenerateTrainSets(object):
@@ -141,7 +141,11 @@ class GenerateTrainSets(object):
     def min_max(self, min_max):
         for i in map(list, zip(*self.data_set)):
             no_none_i = [j for j in i if j is not None]
-            min_max.append([min(no_none_i), max(no_none_i)])
+            max_val = min(no_none_i)
+            min_val = max(no_none_i)
+            if min_val == max_val:
+                max_val = 10
+            min_max.append([min_val, max_val])
         self.__min_max = min_max
 
 
@@ -225,7 +229,7 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
         return [[self.normalize(i[0], *i, norm_rule=norm_rule),
                  self.normalize(i[1], *i, norm_rule=norm_rule)] for i in self.min_max]
 
-    def _normalize_matrix(self, data_list):
+    def _normalize_matrix(self, data_list, norm_rule="zero_one"):
         """Normalize matrices
 
         Helper function to normalize multidimensional lists.
@@ -235,9 +239,13 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
         :rtype: generator
         """
         for data_l, min_max in zip(data_list, self.min_max):
-            yield [self.normalize(i, min_max[0], min_max[1]) if i is not None
-                   else i
-                   for i in data_l]
+            try:
+                yield [self.normalize(i, min_max[0], min_max[1], norm_rule) if i is not None
+                       else i
+                       for i in data_l]
+            except ZeroDivisionError as e:
+                print(min_max[0], print(min_max[1]))
+                print(e)
 
     def normalized_data_set_separator(self, n_steps, goal_row, goal_as_input=False, norm_rule="zero_one"):
         """Creates normalized datasets
@@ -269,7 +277,7 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
                 transposed_data = list(map(list, zip(*i)))
                 goal = transposed_data[goal_row][-1]
                 if goal_as_input:
-                    train_data = self.__normalize_matrix(transposed_data)
+                    train_data = self._normalize_matrix(transposed_data)
                     if None not in transposed_data[goal_row]:
                         yield [[f_data for f_data in chain.from_iterable(train_data)],
                                [self.normalize(goal,
@@ -278,7 +286,7 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
                                ]
                 else:
                     goal = transposed_data[goal_row][-1]
-                    train_data = self.__normalize_matrix(transposed_data[0:goal_row])
+                    train_data = self._normalize_matrix(transposed_data[0:goal_row])
                     if goal is not None:
                         yield [[f_data for f_data in chain.from_iterable(train_data)],
                                [self.normalize(goal,
@@ -331,7 +339,7 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
         of lists with normalized values with the following
         form: [[input_0, input_1, ...input_n], [goal]].
 
-        :param n_steps: Number of accumulated convoluted steps
+        :param n_steps: Number o1f accumulated convoluted steps
          to be returned in the first index of the generated lists.
         :param goal_row: The row containing the model goal
         :param goal_as_input: whether or not to use the goal as
@@ -349,7 +357,6 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
         count = 0
         data = list(self.chunks(self.data_set, n_steps))
 
-        n_of_seasons_dataset = len(data) // n_steps
         count_seasons = 0
         count_register = 0
         new_data = []
@@ -362,8 +369,7 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
                 count_register = 0
             if count_seasons == n_seasons:
                 count_seasons = 0
-        for i in new_data:
-            print(i)
+
         return_data = defaultdict(list)
 
         for i in new_data:
@@ -373,7 +379,7 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
                 goal = transposed_data[goal_row][-1]
 
                 if goal_as_input:
-                    train_data = self.__normalize_matrix(transposed_data)
+                    train_data = self._normalize_matrix(transposed_data, norm_rule)
                     if None not in transposed_data[goal_row]:
                         ann_data = ([[f_data for f_data in chain.from_iterable(train_data)],
                                          [self.normalize(goal,
@@ -384,7 +390,7 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
                 else:
 
                     goal = transposed_data[goal_row][-1]
-                    train_data = self._normalize_matrix(transposed_data[0:goal_row])
+                    train_data = self._normalize_matrix(transposed_data[0:goal_row], norm_rule)
                     if goal is not None:
                         ann_data = ([[f_data for f_data in chain.from_iterable(train_data)],
                                         [self.normalize(goal,

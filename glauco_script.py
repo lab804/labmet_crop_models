@@ -117,6 +117,8 @@ def month_ann(goal_type='atr', n_steps=10,
         print(k, len(v))
 
     dataset = gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")
+    print(dataset)
+
     for k, v in dataset.items():
         mlp = TimeSeriesMLPMultivariate(shape, train_alg)
         if train_alg != "train_ncg":
