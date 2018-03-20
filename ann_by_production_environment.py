@@ -5,6 +5,9 @@ from crop_models.ann.multilayerperceptron import TimeSeriesMLPMultivariate
 
 from sklearn.metrics import r2_score
 
+from collections import defaultdict
+
+
 import os
 import inspect
 
@@ -19,30 +22,41 @@ def r_sqrt(real, estimated):
     return r_q
 
 
-def  open_dataset(start=0, stop=396, n_steps=10):
+def  open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_season=3):
 
-    goal_row = 10
+    goal_row = 9
 
     data_amb_a = ExcelDataReader("dados_uiracemapolis_estruturados.xlsx", l1=1,
-                           usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12))
+                           usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 12))
     data_amb_c = ExcelDataReader("dados_uiracemapolis_estruturados.xlsx", l1=1,
-                           usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 13, 14))
+                           usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 14))
     data_amb_d = ExcelDataReader("dados_uiracemapolis_estruturados.xlsx", l1=1,
-                                 usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 15, 16))
+                                 usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 16))
+
     data_ambs = [data_amb_a, data_amb_c, data_amb_d]
 
     gen_train_sets = [GenerateSeasonedNormalizedTrainSets(i.data()[start:stop]) for i in data_ambs]
 
-    datasets = [i.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one") for i in gen_train_sets]
-    dic_default = datasets[0]
-    for i in datasets[1:]:
+
+
+    datasets = [i.normalized_data_set_separator(n_steps, goal_row, n_of_seasons, periods_by_season,
+                                                norm_rule="less_one_one") for i in gen_train_sets]
+
+
+    dic_default = defaultdict(list)
+    count=-1
+    for i in datasets:
         for k, v in i.items():
-            dic_default[k].append(v)
+            for j in v:
+                j[0].insert(-1, count)
+            dic_default[k].extend(v)
+        count+=1
+
     return dic_default
 
-def month_ann(goal_type='atr', n_steps=10,
+def month_ann(goal_type='tch', n_steps=10,
               shape=[60, 1], train_alg="train_rprop",
-              epochs=500, goal=0.000001, adapt=False, show=1):
+              epochs=500, goal=0.0001, adapt=False, show=1):
     base_name = "train_anns/{}_{}_steps_{}_{}_adapt_{}".format(goal_type, n_steps, train_alg,
                                                                      "_".join(map(str, shape)), adapt)
     base_path_name = "/".join([base_path, base_name])
@@ -51,15 +65,14 @@ def month_ann(goal_type='atr', n_steps=10,
     if not os.path.exists(base_path_name):
         os.makedirs(base_path_name)
 
-    goal_row = 9
+    # goal_row = 9
 
     gen_train_sets = open_dataset(n_steps=n_steps, start=0, stop=396)
     validation_set = open_dataset(n_steps=n_steps, start=396, stop=-1)
 
-    #todo finish this
+    # dataset = gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")
+    for k, v in gen_train_sets.items():
 
-    dataset = gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")
-    for k, v in dataset.items():
         mlp = TimeSeriesMLPMultivariate(shape, train_alg)
         if train_alg != "train_ncg":
             min_error = mlp.train(v, save_plot=True, filename=str_template.format(base_path_name, "train_stage", k),
@@ -71,22 +84,22 @@ def month_ann(goal_type='atr', n_steps=10,
         sim = mlp.sim(x_label="{} estimado".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
                       save_plot=True, filename=str_template.format(base_path_name, "estimado_scatter", k))
 
-        mlp.out(validation_set.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")[k],
+        mlp.out(validation_set[k],
                 x_label="{} previsto".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
                 save_plot=True, filename=str_template.format(base_path_name, "previsto_scatter", k))
 
-        val_data_set = validation_set.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")[k]
+
         predicted = mlp.out(
-            val_data_set,
+            validation_set[k],
             x_label="{} previsto".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
             plot_type='plot', save_plot=True, filename=str_template.format(base_path_name, "previsto_line", k))
 
         mlp.save(str_template.format(base_path_name, "ann", k))
         try:
-            r_q_est = r_sqrt(gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")[k],
+            r_q_est = r_sqrt(v,
                              sim)
 
-            r_q = r_sqrt(validation_set.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")[k],
+            r_q = r_sqrt(v,
                          predicted)
         except:
             r_q_est = 0
@@ -113,9 +126,9 @@ def month_ann(goal_type='atr', n_steps=10,
 
 if __name__ == '__main__':
 
-    # # month_ann('atr', 3, [60, 20, 1], "train_rprop", epochs=400)
+    # month_ann('TCH', 1, [60, 20, 1], "train_rprop", epochs=400)
     shape = [40, 10,1]
-    for n_steps in range(15, 36):
+    for n_steps in range(20, 36):
         # try:
             # month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
 
@@ -123,9 +136,9 @@ if __name__ == '__main__':
             # month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50, adapt=True)
 
             # month_ann('atr', n_steps, shape, "train_ncg")
-            month_ann('tch', n_steps, shape, "train_ncg")
+            # month_ann('tch', n_steps, shape, "train_ncg")
             # month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
-            month_ann('tch', n_steps, shape, "train_gdx", epochs=900, show=50)
+            month_ann('tch', n_steps, shape, "train_gdx", epochs=1200, show=50)
             # month_ann('tch', n_steps, shape, "train_gdx", adapt=True, epochs=900, show=50)
         # except Exception as e:
         #     print(e)

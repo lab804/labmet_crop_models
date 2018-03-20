@@ -279,7 +279,7 @@ class TimeSeriesMLPMultivariateTemp(object):
         ann.errorf = error_functions[self.error_function]
         ann.trainf = mlp_train_algorithm[self.train_alg]
         for l in ann.layers:
-            l.initf = nl.init.InitRand([0.001, 0.8], 'wb')
+            l.initf = nl.init.InitRand([-0.05, 0.05], 'wb')
         return ann
 
     def __pickle_helper(self, f_name):

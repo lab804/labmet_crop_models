@@ -120,6 +120,7 @@ class GenerateTrainSets(object):
             raise TypeError("The matrix must be an iterable"
                             "object but not a string")
 
+
         self.min_max = []
 
     @property
@@ -141,10 +142,8 @@ class GenerateTrainSets(object):
     def min_max(self, min_max):
         for i in map(list, zip(*self.data_set)):
             no_none_i = [j for j in i if j is not None]
-            max_val = min(no_none_i)
-            min_val = max(no_none_i)
-            if min_val == max_val:
-                max_val = 10
+            max_val = max(no_none_i)
+            min_val = min(no_none_i)
             min_max.append([min_val, max_val])
         self.__min_max = min_max
 
@@ -240,7 +239,7 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
         """
         for data_l, min_max in zip(data_list, self.min_max):
             try:
-                yield [self.normalize(i, min_max[0], min_max[1], norm_rule) if i is not None
+                yield [self.normalize(i, min(min_max), max(min_max), norm_rule) if i is not None
                        else i
                        for i in data_l]
             except ZeroDivisionError as e:
@@ -326,10 +325,6 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
 
     """
 
-    def normalized_min_max(self, norm_rule="zero_one"):
-        return [[self.normalize(i[0], *i, norm_rule=norm_rule),
-                 self.normalize(i[1], *i, norm_rule=norm_rule)] for i in self.min_max]
-
     def normalized_data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False, norm_rule="zero_one"):
         """Creates normalized datasets
 
@@ -354,7 +349,6 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
         :rtype: generator
         """
         self._check_normalization_rule(norm_rule)
-        count = 0
         data = list(self.chunks(self.data_set, n_steps))
 
         count_seasons = 0
