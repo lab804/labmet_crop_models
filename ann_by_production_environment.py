@@ -56,7 +56,7 @@ def  open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_sea
 
 def month_ann(goal_type='tch', n_steps=10,
               shape=[60, 1], train_alg="train_rprop",
-              epochs=500, goal=0.0001, adapt=False, show=1):
+              epochs=500, goal=0.1, adapt=False, show=1):
     base_name = "train_anns/{}_{}_steps_{}_{}_adapt_{}".format(goal_type, n_steps, train_alg,
                                                                      "_".join(map(str, shape)), adapt)
     base_path_name = "/".join([base_path, base_name])
@@ -73,8 +73,8 @@ def month_ann(goal_type='tch', n_steps=10,
     # dataset = gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")
     for k, v in gen_train_sets.items():
 
-        mlp = TimeSeriesMLPMultivariate(shape, train_alg)
-        if train_alg != "train_ncg":
+        mlp = TimeSeriesMLPMultivariate(shape, train_alg, error_function='sse')
+        if train_alg != "train_ncg" and train_alg != "train_cg":
             min_error = mlp.train(v, save_plot=True, filename=str_template.format(base_path_name, "train_stage", k),
                                   epochs=epochs, goal=goal, adapt=adapt, show=show)
         else:
@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
     # month_ann('TCH', 1, [60, 20, 1], "train_rprop", epochs=400)
     shape = [40, 10,1]
-    for n_steps in range(20, 36):
+    for n_steps in range(1, 36):
         # try:
             # month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
 
@@ -136,7 +136,7 @@ if __name__ == '__main__':
             # month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50, adapt=True)
 
             # month_ann('atr', n_steps, shape, "train_ncg")
-            # month_ann('tch', n_steps, shape, "train_ncg")
+            month_ann('tch', n_steps, shape, "train_cg", show=50)
             # month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
             month_ann('tch', n_steps, shape, "train_gdx", epochs=1200, show=50)
             # month_ann('tch', n_steps, shape, "train_gdx", adapt=True, epochs=900, show=50)
