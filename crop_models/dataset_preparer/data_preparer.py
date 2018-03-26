@@ -99,7 +99,7 @@ class GenerateTrainSets(object):
     and regressive models.
 
     """
-    def __init__(self, data_set):
+    def __init__(self, data_set, min_max=None):
         """Dataset inputs
 
         receives a dataset in the form of
@@ -120,8 +120,10 @@ class GenerateTrainSets(object):
             raise TypeError("The matrix must be an iterable"
                             "object but not a string")
 
-
-        self.min_max = []
+        if min_max is None:
+            self.min_max = self.__set_min_max()
+        else:
+            self.min_max = min_max
 
     @property
     def data_set(self):
@@ -134,18 +136,15 @@ class GenerateTrainSets(object):
             data_set = [[float(j) if isinstance(j, int) else j for j in i] for i in data_set]
         self.__data_set = data_set
 
-    @property
-    def min_max(self):
-        return self.__min_max
 
-    @min_max.setter
-    def min_max(self, min_max):
+    def __set_min_max(self):
+        min_max = []
         for i in map(list, zip(*self.data_set)):
             no_none_i = [j for j in i if j is not None]
             max_val = max(no_none_i)
             min_val = min(no_none_i)
             min_max.append([min_val, max_val])
-        self.__min_max = min_max
+        return min_max
 
 
     @staticmethod
@@ -197,8 +196,10 @@ class GenerateTrainSets(object):
                         yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
                 else:
                     train_data = transposed_data[0:goal_row]
-                    if goal[-1] is not None:
-                        yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
+                    data = [f_data for f_data in chain.from_iterable(train_data)]
+                    if goal[-1] is not None and None not in data:
+                        yield [data, [goal[-1]]]
+
 
     def update_data_set(self, data_set):
         """Updates instance with new dataset
@@ -242,9 +243,21 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
                 yield [self.normalize(i, min(min_max), max(min_max), norm_rule) if i is not None
                        else i
                        for i in data_l]
+
             except ZeroDivisionError as e:
                 print(min_max[0], print(min_max[1]))
                 print(e)
+
+    def _normalize_and_concatenate_dataset(self, input_data, norm_rule, goal_row, goal_as_input):
+
+        if goal_as_input:
+            train_data = self._normalize_matrix(input_data, norm_rule)
+        else:
+            train_data = self._normalize_matrix(input_data[0:goal_row], norm_rule)
+
+        data = [f_data for f_data in chain.from_iterable(train_data)]
+
+        return data
 
     def normalized_data_set_separator(self, n_steps, goal_row, goal_as_input=False, norm_rule="zero_one"):
         """Creates normalized datasets
@@ -275,22 +288,15 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
             if len(i) == n_steps:
                 transposed_data = list(map(list, zip(*i)))
                 goal = transposed_data[goal_row][-1]
-                if goal_as_input:
-                    train_data = self._normalize_matrix(transposed_data)
-                    if None not in transposed_data[goal_row]:
-                        yield [[f_data for f_data in chain.from_iterable(train_data)],
-                               [self.normalize(goal,
-                                self.min_max[goal_row][0],
-                                self.min_max[goal_row][1])]
-                               ]
-                else:
-                    goal = transposed_data[goal_row][-1]
-                    train_data = self._normalize_matrix(transposed_data[0:goal_row])
-                    if goal is not None:
-                        yield [[f_data for f_data in chain.from_iterable(train_data)],
+
+                data = self._normalize_and_concatenate_dataset(transposed_data, norm_rule, goal_row, goal_as_input)
+
+                if goal is not None and None not in data:
+                    yield [data,
                                [self.normalize(goal,
                                 self.min_max[goal_row][0],
                                 self.min_max[goal_row][1])]]
+
 
     def un_normalize_list(self, uni_dimensional_list, sibling_row, norm_rule="zero_one"):
         """Un-normalize uni-dimensional lists
@@ -372,24 +378,13 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
                 transposed_data = list(map(list, zip(*i[1])))
                 goal = transposed_data[goal_row][-1]
 
-                if goal_as_input:
-                    train_data = self._normalize_matrix(transposed_data, norm_rule)
-                    if None not in transposed_data[goal_row]:
-                        ann_data = ([[f_data for f_data in chain.from_iterable(train_data)],
-                                         [self.normalize(goal,
-                                         self.min_max[goal_row][0],
-                                         self.min_max[goal_row][1])]])
-                        return_data[str(register_domain)].append(ann_data)
+                data = self._normalize_and_concatenate_dataset(transposed_data, norm_rule, goal_row, goal_as_input)
 
-                else:
-
-                    goal = transposed_data[goal_row][-1]
-                    train_data = self._normalize_matrix(transposed_data[0:goal_row], norm_rule)
-                    if goal is not None:
-                        ann_data = ([[f_data for f_data in chain.from_iterable(train_data)],
-                                        [self.normalize(goal,
-                                         self.min_max[goal_row][0],
-                                         self.min_max[goal_row][1])]])
-                        return_data[str(register_domain)].append(ann_data)
+                if goal is not None and None not in data:
+                    ann_data = ([data,
+                                 [self.normalize(goal,
+                                                 self.min_max[goal_row][0],
+                                                 self.min_max[goal_row][1])]])
+                    return_data[str(register_domain)].append(ann_data)
 
         return return_data
