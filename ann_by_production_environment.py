@@ -37,9 +37,12 @@ def  open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_sea
 
     gen_train_sets = [GenerateSeasonedNormalizedTrainSets(i.data()[start:stop]) for i in data_ambs]
 
+    # for i in gen_train_sets[0].data_set_separator(n_steps, 9, False):
+    #     print(i)
 
 
     datasets = [i.normalized_data_set_separator(n_steps, goal_row, n_of_seasons, periods_by_season,
+                                                goal_as_input=False,
                                                 norm_rule="less_one_one") for i in gen_train_sets]
 
 
@@ -68,7 +71,7 @@ def month_ann(goal_type='tch', n_steps=10,
     # goal_row = 9
 
     gen_train_sets = open_dataset(n_steps=n_steps, start=0, stop=396)
-    validation_set = open_dataset(n_steps=n_steps, start=396, stop=-1)
+    validation_set = open_dataset(n_steps=n_steps, start=396 - n_steps, stop=-1)
 
     # dataset = gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")
     for k, v in gen_train_sets.items():
@@ -125,20 +128,20 @@ def month_ann(goal_type='tch', n_steps=10,
 
 
 if __name__ == '__main__':
-
-    # month_ann('TCH', 1, [60, 20, 1], "train_rprop", epochs=400)
-    shape = [40, 10,1]
-    for n_steps in range(1, 36):
-        # try:
-            # month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
-
-            month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50)
-            # month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50, adapt=True)
-
-            # month_ann('atr', n_steps, shape, "train_ncg")
-            month_ann('tch', n_steps, shape, "train_cg", show=50)
-            # month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
-            month_ann('tch', n_steps, shape, "train_gdx", epochs=1200, show=50)
-            # month_ann('tch', n_steps, shape, "train_gdx", adapt=True, epochs=900, show=50)
-        # except Exception as e:
-        #     print(e)
+    open_dataset(start=396, stop=-1, n_steps=3, n_of_seasons=12, periods_by_season=3)
+    month_ann('TCH', 1, [60, 20, 1], "train_rprop", epochs=400)
+    # shape = [40, 10,1]
+    # for n_steps in range(1, 36):
+    #     # try:
+    #         # month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
+    #
+    #         month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50)
+    #         # month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50, adapt=True)
+    #
+    #         # month_ann('atr', n_steps, shape, "train_ncg")
+    #         month_ann('tch', n_steps, shape, "train_cg", show=50)
+    #         # month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
+    #         month_ann('tch', n_steps, shape, "train_gdx", epochs=1200, show=50)
+    #         # month_ann('tch', n_steps, shape, "train_gdx", adapt=True, epochs=900, show=50)
+    #     # except Exception as e:
+    #     #     print(e)
