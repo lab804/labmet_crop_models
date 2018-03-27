@@ -22,7 +22,7 @@ def r_sqrt(real, estimated):
     return r_q
 
 
-def  open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_season=3):
+def  open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_season=3, validation=False):
 
     goal_row = 9
 
@@ -35,17 +35,24 @@ def  open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_sea
 
     data_ambs = [data_amb_a, data_amb_c, data_amb_d]
 
-    gen_train_sets = [GenerateSeasonedNormalizedTrainSets(i.data()[start:stop]) for i in data_ambs]
+    if not validation:
+        gen_train_sets = [GenerateSeasonedNormalizedTrainSets(i.data()[start:stop]) for i in data_ambs]
+    else:
+        min_max = GenerateNormalizedTrainSets(data_amb_a.data()[0:start]).min_max
+        # for i in GenerateNormalizedTrainSets(data_amb_a.data()[0:start]).data_set_separator(n_steps, goal_row):
+        #     print(i)
+        gen_train_sets = [GenerateSeasonedNormalizedTrainSets(i.data()[start:stop], min_max) for i in data_ambs]
 
     # for i in gen_train_sets[0].data_set_separator(n_steps, 9, False):
     #     print(i)
 
 
-    datasets = [i.normalized_data_set_separator(n_steps, goal_row, n_of_seasons, periods_by_season,
+    # datasets = [i.normalized_data_set_separator(n_steps, goal_row, n_of_seasons, periods_by_season,
+    #                                             goal_as_input=False,
+    #                                             norm_rule="less_one_one") for i in gen_train_sets]
+    datasets = [i.data_set_separator(n_steps, goal_row, n_of_seasons, periods_by_season,
                                                 goal_as_input=False,
-                                                norm_rule="less_one_one") for i in gen_train_sets]
-
-
+                                                ) for i in gen_train_sets]
     dic_default = defaultdict(list)
     count=-1
     for i in datasets:
@@ -71,65 +78,78 @@ def month_ann(goal_type='tch', n_steps=10,
     # goal_row = 9
 
     gen_train_sets = open_dataset(n_steps=n_steps, start=0, stop=396)
-    validation_set = open_dataset(n_steps=n_steps, start=396 - n_steps, stop=-1)
+    validation_set = open_dataset(n_steps=n_steps, start=396 - n_steps, stop=-1, validation=True)
 
     # dataset = gen_train_sets.normalized_data_set_separator(n_steps, goal_row, 12, 3, False, norm_rule="less_one_one")
+    for i in gen_train_sets.keys():
+        print(len(gen_train_sets[i]))
+        # print(len(validation_set[i]))
+
     for k, v in gen_train_sets.items():
+        if len(validation_set[k]) > 0:
+            mlp = TimeSeriesMLPMultivariate(shape, train_alg, error_function='sse')
+            if train_alg != "train_ncg" and train_alg != "train_cg":
 
-        mlp = TimeSeriesMLPMultivariate(shape, train_alg, error_function='sse')
-        if train_alg != "train_ncg" and train_alg != "train_cg":
-            min_error = mlp.train(v, save_plot=True, filename=str_template.format(base_path_name, "train_stage", k),
-                                  epochs=epochs, goal=goal, adapt=adapt, show=show)
-        else:
-            min_error = mlp.train(v, save_plot=True, filename=str_template.format(base_path_name, "train_stage", k),
-                                  epochs=epochs, goal=goal)
+                tries = 0
+                print(v)
+                while tries < 5:
+                    min_error = mlp.train(v, save_plot=True, filename=str_template.format(base_path_name, "train_stage", k),
+                                          epochs=epochs, goal=goal, adapt=adapt, show=show)
+                    if min_error[-1] < 0.7:
+                        tries = 5
 
-        sim = mlp.sim(x_label="{} estimado".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
-                      save_plot=True, filename=str_template.format(base_path_name, "estimado_scatter", k))
+                    tries+=1
+            else:
 
-        mlp.out(validation_set[k],
+                min_error = mlp.train(v, save_plot=True, filename=str_template.format(base_path_name, "train_stage", k),
+                                          epochs=epochs, goal=goal)
+
+            sim = mlp.sim(x_label="{} estimado".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
+                          save_plot=True, filename=str_template.format(base_path_name, "estimado_scatter", k))
+
+            mlp.out(validation_set[k],
+                    x_label="{} previsto".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
+                    save_plot=True, filename=str_template.format(base_path_name, "previsto_scatter", k))
+
+            predicted = mlp.out(
+                validation_set[k],
                 x_label="{} previsto".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
-                save_plot=True, filename=str_template.format(base_path_name, "previsto_scatter", k))
+                plot_type='plot', save_plot=True, filename=str_template.format(base_path_name, "previsto_line", k))
 
+            mlp.save(str_template.format(base_path_name, "ann", k))
+            try:
+                r_q_est = r_sqrt(v,
+                                 sim)
 
-        predicted = mlp.out(
-            validation_set[k],
-            x_label="{} previsto".format(goal_type.upper()), y_label="{} real".format(goal_type.upper()),
-            plot_type='plot', save_plot=True, filename=str_template.format(base_path_name, "previsto_line", k))
+                r_q = r_sqrt(v,
+                             predicted)
+            except:
+                r_q_est = 0
+                r_q = 0
 
-        mlp.save(str_template.format(base_path_name, "ann", k))
-        try:
-            r_q_est = r_sqrt(v,
-                             sim)
+            with open("{}/{}".format(base_path_name, "params_{}_mes.txt".format(k)), "wb") as f:
+                frame = inspect.currentframe()
+                args, _, _, values = inspect.getargvalues(frame)
 
-            r_q = r_sqrt(v,
-                         predicted)
-        except:
-            r_q_est = 0
-            r_q = 0
+                for i in args:
+                    f.write(bytes("{}: {}\n".format(i, values[i]), encoding='utf8'))
+                f.write(bytes("minimum error: {}\n".format(min_error[-1]), encoding='utf8'))
 
-        with open("{}/{}".format(base_path_name, "params_{}_mes.txt".format(k)), "wb") as f:
-            frame = inspect.currentframe()
-            args, _, _, values = inspect.getargvalues(frame)
+                f.write(bytes("r squared estimation: {}\n".format(r_q_est), encoding='utf8'))
+                f.write(bytes("r squared forecast: {}\n".format(r_q), encoding='utf8'))
 
-            for i in args:
-                f.write(bytes("{}: {}\n".format(i, values[i]), encoding='utf8'))
-            f.write(bytes("minimum error: {}\n".format(min_error[-1]), encoding='utf8'))
+            with open("{}/{}".format(base_path_name, "r_squared_estimated{}_mes.txt".format(k)), "wb") as f:
+                f.write(bytes("{};\n".format(r_q_est), encoding='utf8'))
 
-            f.write(bytes("r squared estimation: {}\n".format(r_q_est), encoding='utf8'))
-            f.write(bytes("r squared forecast: {}\n".format(r_q), encoding='utf8'))
-
-        with open("{}/{}".format(base_path_name, "r_squared_estimated{}_mes.txt".format(k)), "wb") as f:
-            f.write(bytes("{};\n".format(r_q_est), encoding='utf8'))
-
-        with open("{}/{}".format(base_path_name, "r_squared_forecast{}_mes.txt".format(k)), "wb") as f:
-            f.write(bytes("{};\n".format(r_q), encoding='utf8'))
+            with open("{}/{}".format(base_path_name, "r_squared_forecast{}_mes.txt".format(k)), "wb") as f:
+                f.write(bytes("{};\n".format(r_q), encoding='utf8'))
 
 
 
 if __name__ == '__main__':
-    open_dataset(start=396, stop=-1, n_steps=3, n_of_seasons=12, periods_by_season=3)
-    month_ann('TCH', 1, [60, 20, 1], "train_rprop", epochs=400)
+    # open_dataset(start=396, stop=-1, n_steps=1, n_of_seasons=12, periods_by_season=3, validation=True)
+
+    month_ann('TCH', 5, [10, 5, 1], "train_gdx", epochs=1500, goal=0.005)
     # shape = [40, 10,1]
     # for n_steps in range(1, 36):
     #     # try:

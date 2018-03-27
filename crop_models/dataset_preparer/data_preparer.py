@@ -221,8 +221,8 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
 
     """
 
-    def __init__(self, data_set):
-        GenerateTrainSets.__init__(self, data_set),
+    def __init__(self, data_set, min_max=None):
+        GenerateTrainSets.__init__(self, data_set, min_max)
         Normalizer.__init__(self)
 
     def normalized_min_max(self, norm_rule="zero_one"):
@@ -330,6 +330,81 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
     and regressive models.
 
     """
+    def data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False):
+        """Yields the train sets
+
+        Yields the train sets with the first list being the train set by
+        itself the second list the goal, the output is represented by the
+        following list: [[input_0, input_1, ...input_n], [goal]].
+
+        :param n_steps: Number of siblings periods prior goal
+        :param goal_row: The row containing the model goal
+        :param goal_as_input: whether or not to use the goal as
+            input for the model
+
+        :type n_steps: int
+        :type goal_row: int
+        :type goal_as_input: bool
+
+        :return: Yields lists with the
+         form [[input_0, input_1, ...input_n], [goal]]
+        :rtype: list
+        """
+        data = self.chunks(self.data_set, n_steps)
+        count_seasons = 0
+        count_register = 0
+        new_data = []
+        for i in data:
+            new_data.append([count_seasons, i])
+            count_register += 1
+
+            if count_register == register_per_season:
+                count_seasons += 1
+                count_register = 0
+            if count_seasons == n_seasons:
+                count_seasons = 0
+
+        return_data = defaultdict(list)
+
+        # for i in data:
+        #     if len(i) == n_steps:
+        #         transposed_data = list(map(list, zip(*i)))
+        #         goal = transposed_data[goal_row]
+        #
+        #         if goal_as_input:
+        #             train_data = transposed_data
+        #             if None not in goal:
+        #                 yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
+        #         else:
+        #             train_data = transposed_data[0:goal_row]
+        #
+        #             data = [f_data for f_data in chain.from_iterable(train_data)]
+        #
+        #             if goal[-1] is not None and None not in data:
+        #                 yield [data, [goal[-1]]]
+
+
+        for i in new_data:
+            if len(i[1]) == n_steps:
+                register_domain = i[0]
+                transposed_data = list(map(list, zip(*i[1])))
+                goal = transposed_data[goal_row][-1]
+
+                if goal_as_input:
+                    train_data = transposed_data
+
+                else:
+                    train_data = transposed_data[0:goal_row]
+
+                data = [f_data for f_data in chain.from_iterable(train_data)]
+                # data = self._normalize_and_concatenate_dataset(transposed_data, norm_rule, goal_row, goal_as_input)
+
+                if goal is not None and None not in data:
+                    ann_data = ([data,
+                                 [goal]])
+                    return_data[str(register_domain)].append(ann_data)
+
+        return return_data
 
     def normalized_data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False, norm_rule="zero_one"):
         """Creates normalized datasets
