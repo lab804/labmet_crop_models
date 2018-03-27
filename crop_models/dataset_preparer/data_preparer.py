@@ -330,6 +330,23 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
     and regressive models.
 
     """
+
+
+    def _separate_in_seasons(self, data, register_per_season, n_seasons):
+        count_seasons = 0
+        count_register = 0
+        new_data = []
+        for i in data:
+            new_data.append([count_seasons, i])
+            count_register += 1
+
+            if count_register == register_per_season:
+                count_seasons += 1
+                count_register = 0
+            if count_seasons == n_seasons:
+                count_seasons = 0
+        return new_data
+
     def data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False):
         """Yields the train sets
 
@@ -351,18 +368,8 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
         :rtype: list
         """
         data = self.chunks(self.data_set, n_steps)
-        count_seasons = 0
-        count_register = 0
-        new_data = []
-        for i in data:
-            new_data.append([count_seasons, i])
-            count_register += 1
 
-            if count_register == register_per_season:
-                count_seasons += 1
-                count_register = 0
-            if count_seasons == n_seasons:
-                count_seasons = 0
+        new_data = self._separate_in_seasons(data, register_per_season, n_seasons)
 
         return_data = defaultdict(list)
 
@@ -385,6 +392,7 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
                     ann_data = ([data,
                                  [goal]])
                     return_data[str(register_domain)].append(ann_data)
+
         for k, v in return_data.items():
             print(k, v)
         return return_data
@@ -415,18 +423,7 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
         self._check_normalization_rule(norm_rule)
         data = list(self.chunks(self.data_set, n_steps))
 
-        count_seasons = 0
-        count_register = 0
-        new_data = []
-        for i in data:
-            new_data.append([count_seasons, i])
-            count_register+=1
-
-            if count_register == register_per_season:
-                count_seasons += 1
-                count_register = 0
-            if count_seasons == n_seasons:
-                count_seasons = 0
+        new_data = self._separate_in_seasons(data, register_per_season, n_seasons)
 
         return_data = defaultdict(list)
 
