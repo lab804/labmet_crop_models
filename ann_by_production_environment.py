@@ -149,7 +149,7 @@ def month_ann(goal_type='tch', n_steps=10,
 if __name__ == '__main__':
     # open_dataset(start=396, stop=-1, n_steps=1, n_of_seasons=12, periods_by_season=3, validation=True)
 
-    month_ann('TCH', 5, [10, 5, 1], "train_gdx", epochs=1500, goal=0.005)
+    month_ann('TCH', 20, [10, 5, 1], "train_gdx", epochs=1500, goal=0.005)
     # shape = [40, 10,1]
     # for n_steps in range(1, 36):
     #     # try:

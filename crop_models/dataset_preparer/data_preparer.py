@@ -366,24 +366,6 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
 
         return_data = defaultdict(list)
 
-        # for i in data:
-        #     if len(i) == n_steps:
-        #         transposed_data = list(map(list, zip(*i)))
-        #         goal = transposed_data[goal_row]
-        #
-        #         if goal_as_input:
-        #             train_data = transposed_data
-        #             if None not in goal:
-        #                 yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
-        #         else:
-        #             train_data = transposed_data[0:goal_row]
-        #
-        #             data = [f_data for f_data in chain.from_iterable(train_data)]
-        #
-        #             if goal[-1] is not None and None not in data:
-        #                 yield [data, [goal[-1]]]
-
-
         for i in new_data:
             if len(i[1]) == n_steps:
                 register_domain = i[0]
@@ -403,7 +385,8 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
                     ann_data = ([data,
                                  [goal]])
                     return_data[str(register_domain)].append(ann_data)
-
+        for k, v in return_data.items():
+            print(k, v)
         return return_data
 
     def normalized_data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False, norm_rule="zero_one"):
