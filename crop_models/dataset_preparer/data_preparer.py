@@ -164,7 +164,7 @@ class GenerateTrainSets(object):
         for i in range(0, len(l), 1):
             yield l[i:i + n]
 
-    def data_set_separator(self, n_steps, goal_row, goal_as_input=False):
+    def data_set_separator(self, n_steps, goal_row, delay=1, goal_as_input=False):
         """Yields the train sets
 
         Yields the train sets with the first list being the train set by
@@ -184,22 +184,25 @@ class GenerateTrainSets(object):
          form [[input_0, input_1, ...input_n], [goal]]
         :rtype: list
         """
-        data = self.chunks(self.data_set, n_steps)
-        for i in data:
+
+
+        data = [i for i in self.chunks(self.data_set, n_steps)]
+        train_set = data[0: -delay]
+        goal_set = [list(map(list, zip(*i)))[goal_row][-1] for i in data[delay:]]
+
+        for i, j in zip(train_set, goal_set):
             if len(i) == n_steps:
                 transposed_data = list(map(list, zip(*i)))
-                goal = transposed_data[goal_row]
-
+                goal =  j
                 if goal_as_input:
                     train_data = transposed_data
-                    if None not in goal:
+                    if goal is not None:
                         yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
                 else:
                     train_data = transposed_data[0:goal_row]
                     data = [f_data for f_data in chain.from_iterable(train_data)]
-                    if goal[-1] is not None and None not in data:
-                        yield [data, [goal[-1]]]
-
+                    if goal is not None and None not in data:
+                        yield [data, [goal]]
 
     def update_data_set(self, data_set):
         """Updates instance with new dataset

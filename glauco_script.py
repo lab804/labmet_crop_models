@@ -101,6 +101,12 @@ def open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_seas
 
     data_ambs = [data_amb_a, data_amb_c]
 
+
+    teste = GenerateTrainSets(data_amb_a.data())
+    data = teste.data_set_separator(3, goal_row, 3)
+    for i in data:
+        print(i)
+
     if not validation:
         gen_train_sets = [GenerateSeasonedNormalizedTrainSets(i.data()[start:stop]) for i in data_ambs]
     else:
@@ -143,6 +149,7 @@ def month_ann(goal_type='atr', n_steps=10,
 
 
     gen_train_sets = open_dataset(n_steps=n_steps, start=0, stop=396)
+
     validation_set = open_dataset(n_steps=n_steps, start=396 - n_steps, stop=-1, validation=True)
 
     for k, v in gen_train_sets.items():
@@ -261,22 +268,22 @@ def month_ann(goal_type='atr', n_steps=10,
 #     ubv = usina boa vista
 
 if __name__ == '__main__':
-    # month_ann('atr', 3, [60, 20, 1], "train_rprop", epochs=400)
-    shape = [40, 10,1]
-    for n_steps in range(36, 54):
-        try:
-            # month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
-
-            month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50)
-            # month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50, adapt=True)
-
-            # month_ann('atr', n_steps, shape, "train_ncg")
-            month_ann('tch', n_steps, shape, "train_ncg")
-            # month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
-            month_ann('tch', n_steps, shape, "train_gdx", epochs=900, show=50)
-            # month_ann('tch', n_steps, shape, "train_gdx", adapt=True, epochs=900, show=50)
-        except Exception as e:
-            print(e)
+    month_ann('atr', 3, [60, 20, 1], "train_rprop", epochs=400)
+    # shape = [40, 10,1]
+    # for n_steps in range(20, 54):
+    #     try:
+    #         # month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
+    #
+    #         month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50)
+    #         # month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50, adapt=True)
+    #
+    #         # month_ann('atr', n_steps, shape, "train_ncg")
+    #         month_ann('tch', n_steps, shape, "train_ncg")
+    #         # month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
+    #         month_ann('tch', n_steps, shape, "train_gdx", epochs=900, show=50)
+    #         # month_ann('tch', n_steps, shape, "train_gdx", adapt=True, epochs=900, show=50)
+    #     except Exception as e:
+    #         print(e)
 
 
 
