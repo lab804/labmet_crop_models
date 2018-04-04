@@ -262,7 +262,7 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
 
         return data
 
-    def normalized_data_set_separator(self, n_steps, goal_row, goal_as_input=False, norm_rule="zero_one"):
+    def normalized_data_set_separator(self, n_steps, goal_row, goal_as_input=False, norm_rule="zero_one", delay=1):
         """Creates normalized datasets
 
         Creates normalized datasets intended to be used in
@@ -285,12 +285,21 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
          in the form [[input_0, input_1, ...input_n], [goal]]
         :rtype: generator
         """
+
+
+
         self._check_normalization_rule(norm_rule)
-        data = self.chunks(self.data_set, n_steps)
-        for i in data:
+
+        data = list(self.chunks(self.data_set, n_steps))
+        train_set = data[0: -delay]
+        goal_set = [list(map(list, zip(*i)))[goal_row][-1] for i in data[delay:]]
+
+        # data = self.chunks(self.data_set, n_steps)
+
+        for i, j in zip(train_set, goal_set):
             if len(i) == n_steps:
                 transposed_data = list(map(list, zip(*i)))
-                goal = transposed_data[goal_row][-1]
+                goal = j
 
                 data = self._normalize_and_concatenate_dataset(transposed_data, norm_rule, goal_row, goal_as_input)
 
@@ -350,7 +359,7 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
                 count_seasons = 0
         return new_data
 
-    def data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False):
+    def data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False, delay=1):
         """Yields the train sets
 
         Yields the train sets with the first list being the train set by
@@ -370,17 +379,17 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
          form [[input_0, input_1, ...input_n], [goal]]
         :rtype: list
         """
-        data = self.chunks(self.data_set, n_steps)
-
-        new_data = self._separate_in_seasons(data, register_per_season, n_seasons)
+        data = list(self.chunks(self.data_set, n_steps))
+        train_set = self._separate_in_seasons(data, register_per_season, n_seasons)[0: - delay]
+        goal_set = [list(map(list, zip(*i)))[goal_row][-1] for i in data[delay:]]
 
         return_data = defaultdict(list)
 
-        for i in new_data:
+        for i, j in zip(train_set, goal_set):
             if len(i[1]) == n_steps:
                 register_domain = i[0]
                 transposed_data = list(map(list, zip(*i[1])))
-                goal = transposed_data[goal_row][-1]
+                goal = j
 
                 if goal_as_input:
                     train_data = transposed_data
@@ -400,7 +409,7 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
             print(k, v)
         return return_data
 
-    def normalized_data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False, norm_rule="zero_one"):
+    def normalized_data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False, norm_rule="zero_one", delay=1):
         """Creates normalized datasets
 
         Creates normalized datasets intended to be used in
@@ -425,16 +434,17 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
         """
         self._check_normalization_rule(norm_rule)
         data = list(self.chunks(self.data_set, n_steps))
+        train_set = self._separate_in_seasons(data, register_per_season, n_seasons)[0: - delay]
+        goal_set = [list(map(list, zip(*i)))[goal_row][-1] for i in data[delay:]]
 
-        new_data = self._separate_in_seasons(data, register_per_season, n_seasons)
 
         return_data = defaultdict(list)
 
-        for i in new_data:
+        for i, j in zip(train_set, goal_set):
             if len(i[1]) == n_steps:
                 register_domain = i[0]
                 transposed_data = list(map(list, zip(*i[1])))
-                goal = transposed_data[goal_row][-1]
+                goal = j
 
                 data = self._normalize_and_concatenate_dataset(transposed_data, norm_rule, goal_row, goal_as_input)
 

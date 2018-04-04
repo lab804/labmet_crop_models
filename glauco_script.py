@@ -91,7 +91,7 @@ def train_ann(goal_type='atr', n_steps=10,
     return r_q
 
 
-def open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_season=3, validation=False):
+def open_dataset(start=0, stop=396, n_steps=10, delay=1, n_of_seasons=12, periods_by_season=3, validation=False):
     goal_row = 9
 
     data_amb_a = ExcelDataReader("dados_uiracemapolis_estruturados.xlsx", l1=1,
@@ -102,10 +102,10 @@ def open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_seas
     data_ambs = [data_amb_a, data_amb_c]
 
 
-    teste = GenerateTrainSets(data_amb_a.data())
-    data = teste.data_set_separator(3, goal_row, 3)
-    for i in data:
-        print(i)
+    # teste = GenerateSeasonedNormalizedTrainSets(data_amb_a.data())
+    # data = teste.data_set_separator(3, goal_row, 12, 3, False, delay=1)
+    # for i in data:
+    #     print(i)
 
     if not validation:
         gen_train_sets = [GenerateSeasonedNormalizedTrainSets(i.data()[start:stop]) for i in data_ambs]
@@ -115,7 +115,8 @@ def open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_seas
 
     datasets = [i.normalized_data_set_separator(n_steps, goal_row, n_of_seasons, periods_by_season,
                                                 goal_as_input=False,
-                                                norm_rule="less_one_one") for i in gen_train_sets]
+                                                norm_rule="less_one_one",
+                                                delay=delay) for i in gen_train_sets]
 
     dic_default = defaultdict(list)
     count = -1
@@ -127,10 +128,10 @@ def open_dataset(start=0, stop=396, n_steps=10, n_of_seasons=12, periods_by_seas
     return dic_default
 
 
-def month_ann(goal_type='atr', n_steps=10,
+def month_ann(goal_type='atr', n_steps=10, delay=1,
               shape=[60, 1], train_alg="train_rprop",
               epochs=500, goal=0.000001, adapt=False, show=1):
-    base_name = "train_anns/{}_{}_steps_{}_{}_adapt_{}".format(goal_type, n_steps, train_alg,
+    base_name = "train_anns/{}_{}_steps_{}_delay_{}_{}_adapt_{}".format(goal_type, n_steps, delay, train_alg,
                                                                      "_".join(map(str, shape)), adapt)
     base_path_name = "/".join([base_path, base_name])
     str_template = "{}/{}_{}_mes"
@@ -148,9 +149,9 @@ def month_ann(goal_type='atr', n_steps=10,
                                usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 10))
 
 
-    gen_train_sets = open_dataset(n_steps=n_steps, start=0, stop=396)
+    gen_train_sets = open_dataset(n_steps=n_steps, delay=delay, start=0, stop=396)
 
-    validation_set = open_dataset(n_steps=n_steps, start=396 - n_steps, stop=-1, validation=True)
+    validation_set = open_dataset(n_steps=n_steps, delay=delay, start=396 - n_steps, stop=-1, validation=True)
 
     for k, v in gen_train_sets.items():
         if len(validation_set[k]) > 0:
@@ -268,34 +269,44 @@ def month_ann(goal_type='atr', n_steps=10,
 #     ubv = usina boa vista
 
 if __name__ == '__main__':
-    month_ann('atr', 3, [60, 20, 1], "train_rprop", epochs=400)
-    # shape = [40, 10,1]
+    # month_ann('atr', 3, 1, [60, 20, 1], "train_rprop", epochs=400)
+
+    shape = [40, 10,1]
+
+
+    for d in range(54, 1, -1):
+        delay = d
+        for n_steps in range(1, d):
+            try:
+                # month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
+
+                month_ann('tch', n_steps, delay, shape, "train_rprop", epochs=600, show=50)
+                # month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50, adapt=True)
+
+                # month_ann('atr', n_steps, shape, "train_ncg")
+                month_ann('tch', n_steps, delay, shape, "train_ncg")
+                # month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
+                month_ann('tch', n_steps, delay, shape, "train_gdx", epochs=900, show=50)
+                # month_ann('tch', n_steps, shape, "train_gdx", adapt=True, epochs=900, show=50)
+                # delay = delay - 1
+            except Exception as e:
+                print(e)
+
+            delay -= 1
+
+
     # for n_steps in range(20, 54):
     #     try:
     #         # month_ann('atr', n_steps, shape, "train_rprop", epochs=400)
     #
-    #         month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50)
+    #         month_ann('tch', n_steps, 1, shape, "train_rprop", epochs=600, show=50)
     #         # month_ann('tch', n_steps, shape, "train_rprop", epochs=600, show=50, adapt=True)
     #
     #         # month_ann('atr', n_steps, shape, "train_ncg")
-    #         month_ann('tch', n_steps, shape, "train_ncg")
+    #         month_ann('tch', n_steps, 1, shape, "train_ncg")
     #         # month_ann('atr', n_steps, shape, "train_gdx", epochs=760)
-    #         month_ann('tch', n_steps, shape, "train_gdx", epochs=900, show=50)
+    #         month_ann('tch', n_steps, 1, shape, "train_gdx", epochs=900, show=50)
     #         # month_ann('tch', n_steps, shape, "train_gdx", adapt=True, epochs=900, show=50)
-    #     except Exception as e:
-    #         print(e)
-
-
-
-    # shape = [60, 20, 1]
-    # for n_steps in range(1, 36):
-    #     try:
-    #         train_ann('atr', n_steps, shape, "train_rprop", epochs=400)
-    #         train_ann('tch', n_steps, shape, "train_rprop", epochs=400)
-    #         train_ann('atr', n_steps, shape, "train_ncg")
-    #         train_ann('tch', n_steps, shape, "train_ncg")
-    #         train_ann('atr', n_steps, shape, "train_gdx", epochs=760)
-    #         train_ann('tch', n_steps, shape, "train_gdx", epochs=760)
     #     except Exception as e:
     #         print(e)
 
