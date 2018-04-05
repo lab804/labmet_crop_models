@@ -1,0 +1,13 @@
+goal_type: tch
+n_steps: 10
+delay: 7
+shape: [40, 10, 1]
+train_alg: train_ncg
+epochs: 500
+goal: 0.005
+adapt: False
+show: 1
+sum_steps: 4
+minimum error: 0.3586582499686686
+r squared estimation: -0.6847645624560357
+r squared forecast: -0.4787731741416472

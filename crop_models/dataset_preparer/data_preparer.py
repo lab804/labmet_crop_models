@@ -405,8 +405,6 @@ class GenerateSeasonedNormalizedTrainSets(GenerateNormalizedTrainSets):
                                  [goal]])
                     return_data[str(register_domain)].append(ann_data)
 
-        for k, v in return_data.items():
-            print(k, v)
         return return_data
 
     def normalized_data_set_separator(self, n_steps, goal_row, n_seasons, register_per_season, goal_as_input=False, norm_rule="zero_one", delay=1):
