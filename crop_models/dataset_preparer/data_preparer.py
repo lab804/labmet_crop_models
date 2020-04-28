@@ -188,21 +188,23 @@ class GenerateTrainSets(object):
 
         data = [i for i in self.chunks(self.data_set, n_steps)]
         train_set = data[0: -delay]
-        goal_set = [list(map(list, zip(*i)))[goal_row][-1] for i in data[delay:]]
+        goal_set = []
+        for data_chunk in data[delay:]:
+            if len(data_chunk) == n_steps:
+                goal_set.append(list(map(list, zip(*data_chunk)))[goal_row][-1])
 
         for i, j in zip(train_set, goal_set):
-            if len(i) == n_steps:
-                transposed_data = list(map(list, zip(*i)))
-                goal =  j
-                if goal_as_input:
-                    train_data = transposed_data
-                    if goal is not None:
-                        yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
-                else:
-                    train_data = transposed_data[0:goal_row]
-                    data = [f_data for f_data in chain.from_iterable(train_data)]
-                    if goal is not None and None not in data:
-                        yield [data, [goal]]
+            transposed_data = list(map(list, zip(*i)))
+            goal =  j
+            if goal_as_input:
+                train_data = transposed_data
+                if goal is not None:
+                    yield [[f_data for f_data in chain.from_iterable(train_data)], [goal[-1]]]
+            else:
+                train_data = transposed_data[0:goal_row]
+                data = [f_data for f_data in chain.from_iterable(train_data)]
+                if goal is not None and None not in data:
+                    yield [data, [goal]]
 
     def update_data_set(self, data_set):
         """Updates instance with new dataset
@@ -292,8 +294,10 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
 
         data = list(self.chunks(self.data_set, n_steps))
         train_set = data[0: -delay]
-        goal_set = [list(map(list, zip(*i)))[goal_row][-1] for i in data[delay:]]
-
+        goal_set = []
+        for data_chunk in data[delay:]:
+            if len(data_chunk) == n_steps:
+                goal_set.append(list(map(list, zip(*data_chunk)))[goal_row][-1])
         # data = self.chunks(self.data_set, n_steps)
 
         for i, j in zip(train_set, goal_set):
@@ -328,6 +332,7 @@ class GenerateNormalizedTrainSets(GenerateTrainSets, Normalizer):
         :return: List with its original form and domain
         :rtype: list
         """
+        print(self.min_max[sibling_row][0],self.min_max[sibling_row][1])
         return [self.un_normalize(i,
                                   self.min_max[sibling_row][0],
                                   self.min_max[sibling_row][1],

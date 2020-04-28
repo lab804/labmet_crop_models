@@ -35,8 +35,8 @@ class TimeSeriesMLPMultivariate(object):
             self.error_function = error_function
 
         self.ann = None
-        self.__train_data = []
-        self.__target_data = []
+        self._train_data = []
+        self._target_data = []
 
     @classmethod
     def load(cls, ann_filename):
@@ -77,6 +77,8 @@ class TimeSeriesMLPMultivariate(object):
             pl.scatter(*args)
         pl.xlabel(kwargs["x_label"]),
         pl.ylabel(kwargs["y_label"])
+        if "title" in kwargs:
+            pl.title(kwargs['title'])
         if save_plot:
             try:
                 pl.savefig(fname=kwargs["filename"])
@@ -119,18 +121,18 @@ class TimeSeriesMLPMultivariate(object):
         :param kwargs:
         :return:
         """
-        self.__train_data = []
-        self.__target_data = []
+        self._train_data = []
+        self._target_data = []
         for i in train_set:
-            self.__train_data.append(i[0])
-            self.__target_data.append(i[1])
+            self._train_data.append(i[0])
+            self._target_data.append(i[1])
 
-        range_matrix = self.__train_data_range(self.__train_data)
+        range_matrix = self.__train_data_range(self._train_data)
 
 
         self.ann = self.__ann(range_matrix)
-        error_matrix = self.ann.train(input=self.__train_data,
-                                      target=self.__target_data,
+        error_matrix = self.ann.train(input=self._train_data,
+                                      target=self._target_data,
                                       show=show,
                                       **kwargs)
         if plot:
@@ -138,7 +140,8 @@ class TimeSeriesMLPMultivariate(object):
                         x_label='Epoch number(Numero da epoca)',
                         y_label='error function valeu({})'.format(self.error_function.upper()),
                         save_plot=save_plot,
-                        filename=filename)
+                        filename=filename,
+                        **kwargs)
 
         return error_matrix
 
@@ -147,19 +150,19 @@ class TimeSeriesMLPMultivariate(object):
 
         if self.ann is None:
             raise AnnTrainException("It's required to train an Artificial Neural Network")
-        if len(self.__train_data) == 0:
+        if len(self._train_data) == 0:
             raise AnnTrainException("It's required a train set for simulating outputs")
 
-        sim_values = self.ann.sim(self.__train_data)
+        sim_values = self.ann.sim(self._train_data)
         x = range(0, len(sim_values))
         if plot:
             if plot_type == 'plot':
-                self.__plot(x, sim_values, x, self.__target_data,plot_type='plot',
+                self.__plot(x, sim_values, x, self._target_data, plot_type='plot',
                             save_plot=save_plot,
                             filename=filename,
                             **kwargs)
             elif plot_type == 'scatter':
-                self.__plot(sim_values, self.__target_data, plot_type='scatter',
+                self.__plot(sim_values, self._target_data, plot_type='scatter',
                             save_plot=save_plot,
                             filename=filename,
                             **kwargs)
@@ -170,22 +173,22 @@ class TimeSeriesMLPMultivariate(object):
 
         :return:
         """
-        input_train_data = []
-        validation_data = []
-        for i in real_world_data:
-            input_train_data.append(i[0])
-            validation_data.append(i[1])
+        # input_train_data = []
+        # validation_data = []
+        # for i in real_world_data:
+        #     input_train_data.append(i[0])
+        #     validation_data.append(i[1])
 
-        out_values = self.ann.sim(input_train_data)
-        x = range(0, len(out_values))
+        out_values = self.ann.sim(real_world_data)
+        # x = range(0, len(out_values))
         if plot:
             if plot_type == 'plot':
-                self.__plot(x, out_values, x, validation_data, plot_type='plot',
+                self.__plot(kwargs["x"], out_values, plot_type='plot',
                             save_plot=save_plot,
                             filename=filename,
                             **kwargs)
             elif plot_type == 'scatter':
-                self.__plot(out_values, validation_data, plot_type='scatter',
+                self.__plot(kwargs["x"], out_values, plot_type='scatter',
                             save_plot=save_plot,
                             filename=filename,
                             **kwargs)

@@ -163,7 +163,7 @@ def month_ann(goal_type='atr', n_steps=10, delay=1,
                 while tries < 5:
                     min_error = mlp.train(v, save_plot=True, filename=str_template.format(base_path_name, "train_stage", k),
                                           epochs=epochs, goal=goal, adapt=adapt, show=show)
-                    if min_error[-1] < 0.7:
+                    if min_error[-1] < 0.01:
                         tries = 5
 
                     tries+=1
